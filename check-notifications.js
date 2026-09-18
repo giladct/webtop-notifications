@@ -343,16 +343,134 @@ function subcategoryColor(s) {
   return SUBCATEGORY_COLORS[s] || '#7a7f8a';
 }
 
-// ---- Daily Family Digest ----
-// Buckets today's notifications/messages per child into: action items (things
-// the parent must do), upcoming dated events, and general need-to-know info.
-// Kept separate from classifyImportance/extractSubcategory (which drive the
-// 14-day table) because the digest cares about parent-actionability, not the
-// raw event taxonomy.
-const DIGEST_ACTION_RE = /(לחתום|חתימה|יש לאשר|נדרש אישור|לאשר|לשלם|תשלום|למלא\s*טופס|נא\s*למלא|יש\s*להביא|נא\s*להביא|יש\s*להצטייד|להביא)/;
-const DIGEST_DATE_EVENT_RE = /(מבחן|בוחן|טיול|מסיבה|אירוע|יום\s*הורים|טקס|יום\s*ספורט|יום\s*גיבוש)/;
-const DIGEST_CANCEL_RE = /(בוטל|התבטל|מבוטל|נדחה|נדחית|שינוי\s*בשעות|שינוי\s*במערכת)/;
-const DIGEST_INFO_RE = /(מילה טובה|ציון|הפרע|חיסור|איחור|אי הכנ|אי הבאת ציוד|עודכנו עבורך שיעורי-בית)/;
+// ---- Family Digest intelligence layer ----
+// Classifies notifications/messages into parent-facing categories (chips),
+// extracts an event date/time when the text has one (for calendar buttons),
+// and groups everything per child. Nothing here invents information — it only
+// reclassifies and dates text that was already scraped from Webtop.
+const CATEGORY_META = {
+  action:   { icon: '🔴', label: 'צריך לעשות',  color: '#d64545' },
+  bring:    { icon: '🎒', label: 'להביא',        color: '#3fa15e' },
+  payment:  { icon: '💰', label: 'תשלום',        color: '#c98a1c' },
+  test:     { icon: '🧪', label: 'מבחן',         color: '#8a4fd6' },
+  homework: { icon: '📝', label: 'שיעורי בית',   color: '#2f8fd6' },
+  school:   { icon: '📚', label: 'בית ספר',      color: '#2f6fed' },
+  event:    { icon: '📅', label: 'אירוע',        color: '#e0913f' },
+  update:   { icon: '📢', label: 'עדכון',        color: '#7a7f8a' },
+};
+
+// Order matters — checked top to bottom, first match wins (e.g. a form that
+// mentions both a signature AND a fee is filed as a payment, the stronger ask).
+const CATEGORY_RULES = [
+  { key: 'payment', re: /(לשלם|תשלום|עלות|₪)/ },
+  { key: 'action', re: /(לחתום|חתימה|יש לאשר|נדרש אישור|למלא\s*טופס|נא\s*למלא)/ },
+  { key: 'bring', re: /(יש\s*להביא|נא\s*להביא|יש\s*להצטייד|להביא)/ },
+  { key: 'test', re: /(מבחן|בוחן)/ },
+  { key: 'homework', re: /(שיעורי[\s-]?בית|אי הכנ|עודכנו עבורך שיעורי-בית)/ },
+  { key: 'event', re: /(טיול|מסיבה|טקס|יום\s*הורים|יום\s*ספורט|יום\s*גיבוש|חגיג|נשף|אירוע)/ },
+  { key: 'update', re: /(בוטל|התבטל|מבוטל|נדחה|נדחית|שינוי\s*בשעות|שינוי\s*במערכת|ציון|מילה טובה|הפרע|חיסור|איחור)/ },
+];
+
+function classifyItemCategory(text) {
+  for (const { key, re } of CATEGORY_RULES) {
+    if (re.test(text)) return key;
+  }
+  return null;
+}
+
+// Section grouping + order for the full Today's Digest page.
+const DIGEST_SECTIONS = [
+  { key: 'need', label: 'צריך לעשות', icon: '🔴', categories: ['action', 'payment'] },
+  { key: 'bring', label: 'להביא', icon: '🎒', categories: ['bring'] },
+  { key: 'school', label: 'בית ספר', icon: '📚', categories: ['homework', 'test', 'school'] },
+  { key: 'upcoming', label: 'בקרוב', icon: '📅', categories: ['event'] },
+  { key: 'update', label: 'כדאי לדעת', icon: '📢', categories: ['update'] },
+];
+
+// Condensed grouping for the Home Dashboard child cards (4 fixed rows).
+const HOME_SECTIONS = [
+  { key: 'need', label: 'דרוש טיפול', icon: '🔴', categories: ['action', 'payment', 'bring'] },
+  { key: 'school', label: 'שיעורי בית ומבחנים', icon: '📚', categories: ['homework', 'test', 'school'] },
+  { key: 'upcoming', label: 'אירועים קרובים', icon: '📅', categories: ['event'] },
+  { key: 'update', label: 'עדכונים חשובים', icon: '📢', categories: ['update'] },
+];
+
+// Categories worth a calendar entry. 'update' (grades, disruptions, absences,
+// cancellations) is deliberately excluded even when a date happens to parse out
+// of its text — that date is usually just when the event happened, not
+// something to add to a calendar. 'homework'/'school' are excluded too, to
+// avoid cluttering the calendar with routine postings.
+const CALENDAR_CATEGORIES = ['event', 'test', 'bring', 'action', 'payment'];
+
+const CHILD_META = {
+  'אלה': { icon: '👧', color: '#e0577f' },
+  'איתן': { icon: '👦', color: '#2f8fd6' },
+  'עלמה': { icon: '👧', color: '#8a4fd6' },
+};
+function childMeta(name) {
+  return CHILD_META[name] || { icon: '🧒', color: '#7a7f8a' };
+}
+
+const WEEKDAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+function nextWeekday(fromDate, targetDow) {
+  const d = new Date(fromDate);
+  d.setHours(0, 0, 0, 0);
+  let diff = (targetDow - d.getDay() + 7) % 7;
+  if (diff === 0) diff = 7;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+// Best-effort date/time extraction from free Hebrew text: an explicit dd/mm(/yyyy),
+// מחר/היום, or a named weekday ("ביום שלישי"). Consistent with the rest of this
+// script's regex-based Hebrew parsing rather than true NLP.
+function extractEventDateTime(text, refDate) {
+  const ref = refDate || new Date();
+  let date = null;
+
+  const dm = text.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+  if (dm) {
+    const dd = parseInt(dm[1], 10), mm = parseInt(dm[2], 10);
+    let yyyy = dm[3] ? parseInt(dm[3], 10) : ref.getFullYear();
+    if (yyyy < 100) yyyy += 2000;
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+      const candidate = new Date(yyyy, mm - 1, dd);
+      if (!isNaN(candidate)) date = candidate;
+    }
+  }
+  if (!date && /מחר/.test(text)) {
+    date = new Date(ref);
+    date.setDate(date.getDate() + 1);
+  }
+  if (!date && /\bהיום\b/.test(text)) {
+    date = new Date(ref);
+  }
+  if (!date) {
+    const wm = text.match(/יום\s*(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)/);
+    if (wm) {
+      const idx = WEEKDAYS_HE.indexOf(wm[1]);
+      if (idx >= 0) date = nextWeekday(ref, idx);
+    }
+  }
+
+  let time = null;
+  const tm = text.match(/(\d{1,2}):(\d{2})\b/);
+  if (tm) {
+    const hh = parseInt(tm[1], 10), min = parseInt(tm[2], 10);
+    if (hh <= 23 && min <= 59) time = `${String(hh).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  }
+
+  if (date) {
+    if (time) {
+      const [hh, min] = time.split(':').map(Number);
+      date.setHours(hh, min, 0, 0);
+    } else {
+      date.setHours(0, 0, 0, 0);
+    }
+  }
+  return { date, time };
+}
 
 function isToday(d) {
   if (!d) return false;
@@ -360,42 +478,9 @@ function isToday(d) {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
-function classifyDigestBucket(text) {
-  if (DIGEST_ACTION_RE.test(text)) return 'action';
-  if (DIGEST_DATE_EVENT_RE.test(text) || DIGEST_CANCEL_RE.test(text)) return 'dates';
-  if (DIGEST_INFO_RE.test(text)) return 'info';
-  return null;
-}
-
-function digestItemFromNotification(row) {
-  const bucket = classifyDigestBucket(row.content);
-  if (!bucket) return null;
-  const subcategory = extractSubcategory(row.content);
-  const subject = extractSubject(row.content);
-  let text = row.content;
-  if (bucket === 'info' && subcategory !== 'אחר') {
-    text = subject ? `${subcategory} בשיעור ${subject}` : subcategory;
-  }
-  return {
-    bucket,
-    text,
-    source: { type: 'notification', date: row.date, category: row.category, content: row.content },
-  };
-}
-
-function digestItemFromMessage(msg, fallbackChild) {
-  const combined = `${msg.subject} ${msg.summary || msg.body || ''}`;
-  let bucket = classifyDigestBucket(combined);
-  if (!bucket) {
-    if (isRoutineMessage(msg.subject)) return null;
-    bucket = 'info';
-  }
-  const text = msg.summary || msg.subject;
-  return {
-    bucket,
-    text,
-    source: { type: 'message', date: msg.date, sender: msg.sender, subject: msg.subject, body: msg.body },
-  };
+function formatDateDisplay(d) {
+  if (!d) return null;
+  return d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 // A school-wide message doesn't name a specific child, but if only one of the
@@ -408,32 +493,65 @@ function attributeMessageChildren(msg, candidateChildren) {
   return named.length ? named : candidateChildren;
 }
 
-function emptyDigestBuckets() {
-  return { action: [], dates: [], info: [] };
+function buildItemFromNotification(row, refDate) {
+  const category = classifyItemCategory(row.content);
+  if (!category) return null;
+  const subcategory = extractSubcategory(row.content);
+  const subject = extractSubject(row.content);
+  const title = subcategory !== 'אחר' ? subcategory : (subject || 'עדכון');
+  const { date, time } = extractEventDateTime(row.content, refDate);
+  return {
+    category,
+    title,
+    detail: row.content,
+    date, time,
+    dateDisplay: formatDateDisplay(date),
+    source: { type: 'notification', date: row.date, category: row.category, content: row.content },
+  };
 }
 
-function pushDigestItem(bucketsByChild, child, item) {
-  if (!bucketsByChild[child]) bucketsByChild[child] = emptyDigestBuckets();
-  const list = bucketsByChild[child][item.bucket];
-  const existing = list.find(i => i.text === item.text);
-  if (existing) {
-    existing.count = (existing.count || 1) + 1;
-  } else {
-    list.push({ ...item, count: 1 });
+function buildItemFromMessage(msg, refDate) {
+  const combined = `${msg.subject} ${msg.summary || msg.body || ''}`;
+  let category = classifyItemCategory(combined);
+  if (!category) {
+    if (isRoutineMessage(msg.subject)) return null;
+    category = 'school';
   }
+  const { date, time } = extractEventDateTime(combined, refDate);
+  return {
+    category,
+    title: msg.subject,
+    detail: msg.summary || msg.subject,
+    date, time,
+    dateDisplay: formatDateDisplay(date),
+    source: { type: 'message', date: msg.date, sender: msg.sender, subject: msg.subject, body: msg.body },
+  };
 }
 
-function buildDailyDigest(children, messageSources) {
-  const now = new Date();
-  const bucketsByChild = {};
+function itemKey(item) {
+  return `${item.category}|${item.title}|${item.detail}`;
+}
+
+function pushItem(byChild, child, item) {
+  if (!byChild[child]) byChild[child] = [];
+  const list = byChild[child];
+  const existing = list.find(i => itemKey(i) === itemKey(item));
+  if (existing) existing.count = (existing.count || 1) + 1;
+  else list.push({ ...item, count: 1 });
+}
+
+// Today's items only (arrival date == today) — powers both the Home Dashboard
+// condensed cards and the full Today's Digest screen.
+function buildTodayItems(children, messageSources) {
+  const byChild = {};
   const childOrder = children.map(c => c.name);
 
   for (const { name, rows } of children) {
     for (const r of rows) {
       const d = parseRowDate(r.date);
       if (!isToday(d)) continue;
-      const item = digestItemFromNotification(r);
-      if (item) pushDigestItem(bucketsByChild, name, item);
+      const item = buildItemFromNotification(r, d);
+      if (item) pushItem(byChild, name, item);
     }
   }
 
@@ -441,48 +559,132 @@ function buildDailyDigest(children, messageSources) {
     for (const m of messages) {
       const d = parseMsgDate(m.date);
       if (!isToday(d)) continue;
-      const item = digestItemFromMessage(m);
+      const item = buildItemFromMessage(m, d);
       if (!item) continue;
       const targets = attributeMessageChildren(m, candidateChildren.length ? candidateChildren : [UNKNOWN_CHILD]);
-      for (const child of targets) pushDigestItem(bucketsByChild, child, item);
+      for (const child of targets) pushItem(byChild, child, item);
     }
   }
 
-  const allChildren = [...new Set([...childOrder, ...Object.keys(bucketsByChild)])];
-  const digestChildren = allChildren
-    .map(name => ({ name, buckets: bucketsByChild[name] || emptyDigestBuckets() }))
-    .filter(c => c.name !== UNKNOWN_CHILD || (c.buckets.action.length + c.buckets.dates.length + c.buckets.info.length) > 0);
-
-  return {
-    date: now.toISOString().slice(0, 10),
-    dateDisplay: now.toLocaleDateString('he-IL'),
-    generatedAt: now.toISOString(),
-    children: digestChildren,
-  };
+  const allChildren = [...new Set([...childOrder, ...Object.keys(byChild)])];
+  return allChildren
+    .map(name => ({ name, items: byChild[name] || [] }))
+    .filter(c => c.name !== UNKNOWN_CHILD || c.items.length > 0);
 }
 
-function digestToWhatsAppText(digest) {
-  const lines = [`📚 סיכום משפחתי – ${digest.dateDisplay}`];
-  const icons = { 'אלה': '👧', 'איתן': '👦', 'עלמה': '👧' };
-  for (const { name, buckets } of digest.children) {
-    const total = buckets.action.length + buckets.dates.length + buckets.info.length;
+// All currently-open dated items across the full notification window — powers
+// per-item "Add to Calendar" buttons and the "Add All Upcoming Events" file,
+// independent of when the notification/message arrived (unlike buildTodayItems).
+function buildUpcomingEvents(children, messageSources) {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const cutoff = new Date(Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const byChild = {};
+  const childOrder = children.map(c => c.name);
+
+  for (const { name, rows } of children) {
+    for (const r of withinWindow(rows, WINDOW_DAYS)) {
+      const item = buildItemFromNotification(r, r._d);
+      if (!item || !item.date || item.date < startOfToday || !CALENDAR_CATEGORIES.includes(item.category)) continue;
+      pushItem(byChild, name, item);
+    }
+  }
+
+  for (const { children: candidateChildren, messages } of messageSources) {
+    for (const m of messages) {
+      const d = parseMsgDate(m.date);
+      if (!d || d < cutoff) continue;
+      const item = buildItemFromMessage(m, d);
+      if (!item || !item.date || item.date < startOfToday || !CALENDAR_CATEGORIES.includes(item.category)) continue;
+      const targets = attributeMessageChildren(m, candidateChildren.length ? candidateChildren : [UNKNOWN_CHILD]);
+      for (const child of targets) pushItem(byChild, child, item);
+    }
+  }
+
+  const allChildren = [...new Set([...childOrder, ...Object.keys(byChild)])];
+  const flat = [];
+  for (const name of allChildren) {
+    for (const item of (byChild[name] || [])) flat.push({ ...item, child: name });
+  }
+  flat.sort((a, b) => a.date - b.date);
+  return flat;
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+
+function googleCalendarUrl(item, child) {
+  const title = `${child} – ${item.title}`;
+  let dates;
+  if (item.time) {
+    const start = item.date;
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    dates = `${start.getFullYear()}${pad2(start.getMonth() + 1)}${pad2(start.getDate())}T${pad2(start.getHours())}${pad2(start.getMinutes())}00/`
+      + `${end.getFullYear()}${pad2(end.getMonth() + 1)}${pad2(end.getDate())}T${pad2(end.getHours())}${pad2(end.getMinutes())}00`;
+  } else {
+    const start = item.date;
+    const end = addDays(start, 1);
+    dates = `${start.getFullYear()}${pad2(start.getMonth() + 1)}${pad2(start.getDate())}/${end.getFullYear()}${pad2(end.getMonth() + 1)}${pad2(end.getDate())}`;
+  }
+  const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates, details: item.detail });
+  return `https://www.google.com/calendar/render?${params.toString()}`;
+}
+
+function icsEscape(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+// A stable UID (hashed from child+category+title+date) means re-downloading the
+// same day's "add all" file and importing it again updates the existing calendar
+// entry in apps that dedupe by UID, instead of creating a second copy.
+function stableUid(item) {
+  const raw = `${item.child}|${item.category}|${item.title}|${item.date.toISOString().slice(0, 10)}`;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) hash = (hash * 31 + raw.charCodeAt(i)) | 0;
+  return `webtop-${Math.abs(hash)}@family-school-hq`;
+}
+
+function buildIcsForEvents(events) {
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//School HQ//Webtop Digest//HE'];
+  for (const item of events) {
+    const start = item.date;
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${stableUid(item)}`);
+    lines.push(`SUMMARY:${icsEscape(`${item.child} – ${item.title}`)}`);
+    if (item.time) {
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      lines.push(`DTSTART:${start.getFullYear()}${pad2(start.getMonth() + 1)}${pad2(start.getDate())}T${pad2(start.getHours())}${pad2(start.getMinutes())}00`);
+      lines.push(`DTEND:${end.getFullYear()}${pad2(end.getMonth() + 1)}${pad2(end.getDate())}T${pad2(end.getHours())}${pad2(end.getMinutes())}00`);
+    } else {
+      const end = addDays(start, 1);
+      lines.push(`DTSTART;VALUE=DATE:${start.getFullYear()}${pad2(start.getMonth() + 1)}${pad2(start.getDate())}`);
+      lines.push(`DTEND;VALUE=DATE:${end.getFullYear()}${pad2(end.getMonth() + 1)}${pad2(end.getDate())}`);
+    }
+    lines.push(`DESCRIPTION:${icsEscape(item.detail)}`);
+    lines.push('END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+function itemWhatsAppText(child, item) {
+  const meta = CATEGORY_META[item.category];
+  const dateStr = item.dateDisplay ? ` ${item.dateDisplay}${item.time ? ' ' + item.time : ''}` : '';
+  return `${child} – ${item.title} ${meta.icon}${dateStr}\n${item.detail}`;
+}
+
+function todayDigestWhatsAppText(todayChildren) {
+  const todayDisplay = new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
+  const lines = [`📚 סיכום משפחתי – ${todayDisplay}`];
+  for (const { name, items } of todayChildren) {
     lines.push('');
-    lines.push(`${icons[name] || '🧒'} ${name}`);
-    if (total === 0) {
-      lines.push('אין עדכונים חשובים היום.');
-      continue;
-    }
-    if (buckets.action.length) {
-      lines.push('🔴 צריך לעשות');
-      for (const i of buckets.action) lines.push(`• ${i.text}${i.count > 1 ? ` (×${i.count})` : ''}`);
-    }
-    if (buckets.info.length) {
-      lines.push('📌 חשוב לדעת');
-      for (const i of buckets.info) lines.push(`• ${i.text}${i.count > 1 ? ` (×${i.count})` : ''}`);
-    }
-    if (buckets.dates.length) {
-      lines.push('📅 תאריכים קרובים');
-      for (const i of buckets.dates) lines.push(`• ${i.text}${i.count > 1 ? ` (×${i.count})` : ''}`);
+    lines.push(`${childMeta(name).icon} ${name}`);
+    if (!items.length) { lines.push('הכל תקין היום ✨'); continue; }
+    for (const { label, icon, categories } of DIGEST_SECTIONS) {
+      const list = items.filter(i => categories.includes(i.category));
+      if (!list.length) continue;
+      lines.push(`${icon} ${label}`);
+      for (const i of list) lines.push(`• ${i.title}${i.count > 1 ? ` (×${i.count})` : ''}`);
     }
   }
   return lines.join('\n');
@@ -539,15 +741,16 @@ function htmlEscape(s) {
 }
 
 const NAV_PAGES = [
-  { file: 'digest.html', label: 'סיכום יומי' },
-  { file: 'notifications-14days.html', label: 'כל ההתראות (14 יום)' },
-  { file: 'messages-inbox.html', label: 'הודעות נכנסות' },
+  { file: 'index.html', label: '🎒 School HQ' },
+  { file: 'digest.html', label: '✨ סיכום היום' },
+  { file: 'notifications-14days.html', label: 'כל ההתראות', secondary: true },
+  { file: 'messages-inbox.html', label: 'הודעות נכנסות', secondary: true },
 ];
 
 function pageShell(title, activeFile, bodyHtml) {
   const now = new Date();
   const nav = NAV_PAGES.map(p => `
-    <a class="nav-link${p.file === activeFile ? ' active' : ''}" href="${p.file}">${htmlEscape(p.label)}</a>
+    <a class="nav-link${p.secondary ? ' secondary' : ''}${p.file === activeFile ? ' active' : ''}" href="${p.file}">${htmlEscape(p.label)}</a>
   `).join('');
 
   return `<!DOCTYPE html>
@@ -600,15 +803,17 @@ function pageShell(title, activeFile, bodyHtml) {
     background: var(--card-bg);
   }
   .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .nav-link.secondary { opacity: 0.65; font-size: 12px; }
   header { margin-bottom: 20px; text-align: center; }
   header h1 { font-size: 22px; margin: 0 0 4px; }
   header p { color: var(--sub-text); margin: 0; font-size: 14px; }
   .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 18px;
     padding: 20px;
     margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
   .card h2 { margin: 0 0 4px; font-size: 19px; }
   .card h3 { margin: 0 0 10px; font-size: 15px; }
@@ -701,53 +906,27 @@ function pageShell(title, activeFile, bodyHtml) {
     padding-top: 10px;
     border-top: 1px dashed var(--border);
   }
-  .digest-child { margin-bottom: 22px; }
-  .digest-child:last-child { margin-bottom: 0; }
-  .digest-child h3 { display: flex; align-items: center; gap: 8px; }
-  .digest-bucket { margin: 10px 0; }
-  .digest-bucket h4 { margin: 0 0 6px; font-size: 13px; color: var(--sub-text); }
-  .digest-bucket.action h4 { color: #d64545; }
-  .digest-item { border-bottom: 1px solid var(--border); padding: 8px 0; }
-  .digest-item:last-child { border-bottom: none; }
-  .digest-item > summary { cursor: pointer; list-style: none; font-size: 14px; }
-  .digest-item > summary::-webkit-details-marker { display: none; }
-  .digest-item > summary::before {
-    content: '▸';
-    display: inline-block;
-    margin-inline-end: 6px;
-    color: var(--sub-text);
-    transition: transform .15s;
-  }
-  .digest-item[open] > summary::before { transform: rotate(90deg); }
   .digest-original {
     white-space: pre-wrap;
     font-size: 13px;
     color: var(--sub-text);
-    margin: 8px 0 0 20px;
+    margin: 8px 0 0;
     padding-top: 8px;
     border-top: 1px dashed var(--border);
   }
-  .wa-box {
-    white-space: pre-wrap;
+  .gen-btn, .cal-all-btn, .wa-all-btn {
+    display: inline-block;
     font-size: 13px;
-    line-height: 1.6;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-    direction: rtl;
-  }
-  .copy-btn, .gen-btn {
-    font-size: 13px;
-    padding: 8px 16px;
-    border-radius: 8px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 999px;
     border: 1px solid var(--accent);
     background: var(--accent);
     color: #fff;
     cursor: pointer;
-    margin-bottom: 12px;
+    text-decoration: none;
   }
-  .copy-btn.copied { background: #3fa15e; border-color: #3fa15e; }
+  .cal-all-btn, .wa-all-btn { background: var(--card-bg); color: var(--text); border-color: var(--border); }
   .gen-btn:disabled { opacity: 0.6; cursor: default; }
   .history-list { display: flex; flex-wrap: wrap; gap: 8px; }
   .history-list a {
@@ -759,6 +938,81 @@ function pageShell(title, activeFile, bodyHtml) {
     color: var(--text);
     text-decoration: none;
   }
+
+  /* ---- School HQ home dashboard ---- */
+  .today-banner { text-align: center; }
+  .today-banner h2 { margin: 0 0 2px; font-size: 20px; }
+  .child-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .child-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--child-c, var(--accent));
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .child-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .child-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--child-c, var(--accent)) 18%, transparent);
+  }
+  .child-card-head h3 { margin: 0; font-size: 17px; }
+  .home-section { margin-bottom: 10px; }
+  .home-section:last-child { margin-bottom: 0; }
+  .home-section h4 { margin: 0 0 4px; font-size: 12px; color: var(--sub-text); }
+  .home-item-list { margin: 0; padding-inline-start: 18px; font-size: 13px; line-height: 1.5; }
+  .more-link { font-size: 12px; color: var(--accent); text-decoration: none; }
+  .all-clear { color: var(--sub-text); font-size: 14px; margin: 0; }
+
+  /* ---- Today's Digest ---- */
+  .digest-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .child-digest { border-top: 4px solid var(--child-c, var(--accent)); }
+  .child-digest h3 { margin: 0 0 12px; font-size: 18px; }
+  .digest-section { margin-bottom: 14px; }
+  .digest-section:last-child { margin-bottom: 0; }
+  .digest-section h4 { margin: 0 0 8px; font-size: 13px; color: var(--sub-text); }
+  .item-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .item-card:last-child { margin-bottom: 0; }
+  .item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .chip {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    color: var(--c);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .item-date { font-size: 12px; color: var(--sub-text); white-space: nowrap; }
+  .item-title { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+  .item-detail { font-size: 13px; color: var(--sub-text); margin: 2px 0 8px; }
+  .item-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .btn-mini {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .original-toggle { margin-top: 8px; font-size: 12px; }
+  .original-toggle summary { cursor: pointer; color: var(--sub-text); list-style: none; }
+  .original-toggle summary::-webkit-details-marker { display: none; }
 </style>
 </head>
 <body>
@@ -828,21 +1082,6 @@ function pageShell(title, activeFile, bodyHtml) {
 
       [childSel, catSel, subcatSel].forEach(function (sel) {
         if (sel) sel.addEventListener('change', applyFilters);
-      });
-    })();
-
-    (function () {
-      var btn = document.getElementById('wa-copy-btn');
-      var box = document.getElementById('wa-text');
-      if (!btn || !box) return;
-      btn.addEventListener('click', function () {
-        navigator.clipboard.writeText(box.textContent).then(function () {
-          btn.textContent = 'הועתק!';
-          btn.classList.add('copied');
-          setTimeout(function () { btn.textContent = 'העתק לוואטסאפ'; btn.classList.remove('copied'); }, 1800);
-        }).catch(function () {
-          btn.textContent = 'לא ניתן להעתיק';
-        });
       });
     })();
 
@@ -974,13 +1213,6 @@ function generateMessagesInboxPage(sources) {
   return pageShell('הודעות נכנסות', 'messages-inbox.html', body);
 }
 
-const DIGEST_ICONS = { 'אלה': '👧', 'איתן': '👦', 'עלמה': '👧' };
-const DIGEST_BUCKET_META = [
-  { key: 'action', label: 'צריך לעשות', icon: '🔴' },
-  { key: 'info', label: 'חשוב לדעת', icon: '📌' },
-  { key: 'dates', label: 'תאריכים קרובים', icon: '📅' },
-];
-
 function digestOriginalHtml(source) {
   if (source.type === 'notification') {
     return `<div class="digest-original">[${htmlEscape(source.category)}] ${htmlEscape(source.date)}<br>${htmlEscape(source.content)}</div>`;
@@ -988,56 +1220,118 @@ function digestOriginalHtml(source) {
   return `<div class="digest-original">${htmlEscape(source.sender)} · ${htmlEscape(source.date)}<br><strong>${htmlEscape(source.subject)}</strong><br>${htmlEscape(source.body || 'אין תוכן זמין.')}</div>`;
 }
 
-function generateDigestBody(digest, opts = {}) {
-  const total = digest.children.reduce((sum, c) => sum + c.buckets.action.length + c.buckets.info.length + c.buckets.dates.length, 0);
+// A single item card: chip + title + detail, an "Add to Calendar" link when a
+// date was detected, a "WhatsApp" link with a pre-filled message, and a
+// collapsed "View original" toggle showing the raw Webtop text it came from.
+function renderItemCard(item, child) {
+  const meta = CATEGORY_META[item.category];
+  const waHref = `https://wa.me/?text=${encodeURIComponent(itemWhatsAppText(child, item))}`;
+  const calBtn = item.date && CALENDAR_CATEGORIES.includes(item.category)
+    ? `<a class="btn-mini" href="${googleCalendarUrl(item, child)}" target="_blank" rel="noopener">📅 הוסף ליומן</a>` : '';
+  const detailHtml = item.detail && item.detail !== item.title ? `<p class="item-detail">${htmlEscape(item.detail)}</p>` : '';
+  return `
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:${meta.color}">${meta.icon} ${htmlEscape(meta.label)}</span>
+        ${item.dateDisplay ? `<span class="item-date">${htmlEscape(item.dateDisplay)}${item.time ? ' · ' + htmlEscape(item.time) : ''}</span>` : ''}
+        ${item.count > 1 ? `<span class="item-date">×${item.count}</span>` : ''}
+      </div>
+      <div class="item-title">${htmlEscape(item.title)}</div>
+      ${detailHtml}
+      <div class="item-actions">
+        ${calBtn}
+        <a class="btn-mini" href="${waHref}" target="_blank" rel="noopener">💬 וואטסאפ</a>
+      </div>
+      <details class="original-toggle"><summary>הצג מקור</summary>${digestOriginalHtml(item.source)}</details>
+    </div>
+  `;
+}
 
-  const childCards = digest.children.map(({ name, buckets }) => {
-    const bucketTotal = buckets.action.length + buckets.info.length + buckets.dates.length;
-    const bucketsHtml = bucketTotal === 0
-      ? '<p class="empty">אין עדכונים חשובים היום.</p>'
-      : DIGEST_BUCKET_META.map(({ key, label, icon }) => {
-          const items = buckets[key];
-          if (!items.length) return '';
-          const itemsHtml = items.map(i => `
-            <details class="digest-item">
-              <summary>${htmlEscape(i.text)}${i.count > 1 ? ` <span class="msg-meta">(×${i.count})</span>` : ''}</summary>
-              ${digestOriginalHtml(i.source)}
-            </details>
-          `).join('');
-          return `<div class="digest-bucket ${key}"><h4>${icon} ${htmlEscape(label)}</h4>${itemsHtml}</div>`;
-        }).join('');
+function homeSectionItems(items, categories) {
+  return items.filter(i => categories.includes(i.category));
+}
+
+// "School HQ" — the main entry point. Three colorful child cards condensed to
+// four rows each (need-to-do / school / upcoming / updates), each capped at two
+// visible lines with a "+N more" link into the full Today's Digest.
+function generateHomePage(todayChildren) {
+  const todayDisplay = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const cards = todayChildren.map(({ name, items }) => {
+    const meta = childMeta(name);
+    const sectionsHtml = HOME_SECTIONS.map(({ label, icon, categories }) => {
+      const list = homeSectionItems(items, categories);
+      if (!list.length) return '';
+      const shown = list.slice(0, 2);
+      const more = list.length - shown.length;
+      const lines = shown.map(i => `<li>${htmlEscape(i.title)}${i.count > 1 ? ` (×${i.count})` : ''}</li>`).join('');
+      return `
+        <div class="home-section">
+          <h4>${icon} ${htmlEscape(label)}</h4>
+          <ul class="home-item-list">${lines}</ul>
+          ${more > 0 ? `<a class="more-link" href="digest.html">+${more} נוספים</a>` : ''}
+        </div>
+      `;
+    }).join('');
     return `
-      <div class="digest-child">
-        <h3>${DIGEST_ICONS[name] || '🧒'} ${htmlEscape(name)}</h3>
-        ${bucketsHtml}
+      <div class="child-card" style="--child-c:${meta.color}">
+        <div class="child-card-head">
+          <span class="child-avatar">${meta.icon}</span>
+          <h3>${htmlEscape(name)}</h3>
+        </div>
+        ${items.length ? sectionsHtml : '<p class="all-clear">הכל תקין היום ✨</p>'}
       </div>
     `;
   }).join('');
 
-  const waText = htmlEscape(digestToWhatsAppText(digest)).replace(/<br>/g, '\n');
-
-  return `
-    <section class="card">
-      <p class="sub" dir="ltr">${digest.dateDisplay} · ${total} items across all children${opts.historyLink ? '' : ''}</p>
-      ${childCards}
+  const body = `
+    <section class="today-banner card">
+      <h2>היום</h2>
+      <p class="sub">${htmlEscape(todayDisplay)}</p>
     </section>
-    <section class="card">
-      <h3>טקסט לשליחה בוואטסאפ</h3>
-      <button class="copy-btn" id="wa-copy-btn">העתק לוואטסאפ</button>
-      <div class="wa-box" id="wa-text">${waText}</div>
+    <div class="child-cards-grid">${cards}</div>
+    <section class="card" style="text-align:center;">
+      <a class="gen-btn" href="digest.html">✨ סיכום היום המלא</a>
     </section>
   `;
+  return pageShell('🎒 School HQ', 'index.html', body);
 }
 
-function generateDigestPage(digest) {
+// "Today's Digest" — the full, verifiable version of the home cards, with
+// calendar/WhatsApp actions per item plus bulk actions for the whole day.
+function generateDigestPage(todayChildren, upcomingEvents) {
+  const todayDisplay = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const childSections = todayChildren.map(({ name, items }) => {
+    const meta = childMeta(name);
+    const sectionsHtml = DIGEST_SECTIONS.map(({ key, label, icon, categories }) => {
+      const list = items.filter(i => categories.includes(i.category));
+      if (!list.length) return '';
+      return `<div class="digest-section ${key}"><h4>${icon} ${htmlEscape(label)}</h4>${list.map(i => renderItemCard(i, name)).join('')}</div>`;
+    }).join('');
+    return `
+      <section class="card child-digest" style="--child-c:${meta.color}">
+        <h3>${meta.icon} ${htmlEscape(name)}</h3>
+        ${items.length ? sectionsHtml : '<p class="all-clear">הכל תקין היום ✨</p>'}
+      </section>
+    `;
+  }).join('');
+
+  const icsHref = upcomingEvents.length
+    ? `data:text/calendar;charset=utf-8,${encodeURIComponent(buildIcsForEvents(upcomingEvents))}`
+    : null;
+  const waFullHref = `https://wa.me/?text=${encodeURIComponent(todayDigestWhatsAppText(todayChildren))}`;
+
   const body = `
-    <section class="card">
+    <section class="card digest-toolbar">
       <button class="gen-btn" id="gen-digest-btn">צור סיכום להיום</button>
+      ${icsHref ? `<a class="cal-all-btn" download="family-events.ics" href="${icsHref}">📅 הוסף את כל האירועים הקרובים (${upcomingEvents.length})</a>` : ''}
+      <a class="wa-all-btn" href="${waFullHref}" target="_blank" rel="noopener">💬 שתף את סיכום היום</a>
       <a class="nav-link" href="digest-history.html">היסטוריית סיכומים ←</a>
     </section>
-    ${generateDigestBody(digest)}
+    ${childSections}
   `;
-  return pageShell(`סיכום משפחתי – ${digest.dateDisplay}`, 'digest.html', body);
+  return pageShell(`✨ סיכום היום – ${todayDisplay}`, 'digest.html', body);
 }
 
 function generateDigestHistoryPage(historyEntries) {
@@ -1049,16 +1343,6 @@ function generateDigestHistoryPage(historyEntries) {
     </section>
   `;
   return pageShell('היסטוריית סיכומים יומיים', '', body);
-}
-
-function generateIndexPage() {
-  const body = `
-    <section class="card">
-      <p class="sub">בחרו דף מהתפריט למעלה, או צרו סיכום יומי חדש.</p>
-      <button class="gen-btn" id="gen-digest-btn">צור סיכום להיום</button>
-    </section>
-  `;
-  return pageShell('סיכום התראות Webtop', '', body);
 }
 
 (async () => {
@@ -1127,9 +1411,16 @@ function generateIndexPage() {
 
   if (!fs.existsSync(DIGESTS_DIR)) fs.mkdirSync(DIGESTS_DIR);
 
-  const digest = buildDailyDigest(htmlChildren, messageSources);
-  fs.writeFileSync(path.join(DIGESTS_DIR, `digest-${digest.date}.json`), JSON.stringify(digest, null, 2), { encoding: 'utf8' });
-  fs.writeFileSync(path.join(DIGESTS_DIR, `digest-${digest.date}.html`), generateDigestPage(digest), { encoding: 'utf8' });
+  const todayChildren = buildTodayItems(htmlChildren, messageSources);
+  const upcomingEvents = buildUpcomingEvents(htmlChildren, messageSources);
+  const todayDate = new Date().toISOString().slice(0, 10);
+
+  fs.writeFileSync(
+    path.join(DIGESTS_DIR, `digest-${todayDate}.json`),
+    JSON.stringify({ date: todayDate, dateDisplay: new Date().toLocaleDateString('he-IL'), children: todayChildren }, null, 2),
+    { encoding: 'utf8' }
+  );
+  fs.writeFileSync(path.join(DIGESTS_DIR, `digest-${todayDate}.html`), generateDigestPage(todayChildren, upcomingEvents), { encoding: 'utf8' });
 
   const historyEntries = fs.readdirSync(DIGESTS_DIR)
     .filter(f => /^digest-\d{4}-\d{2}-\d{2}\.json$/.test(f))
@@ -1144,9 +1435,9 @@ function generateIndexPage() {
   fs.writeFileSync(SUMMARY_TXT, summaryLines.join('\n'), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_ALL, generateAllNotificationsPage(htmlChildren), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_MSG_INBOX, generateMessagesInboxPage(messageSources), { encoding: 'utf8' });
-  fs.writeFileSync(PAGE_DIGEST, generateDigestPage(digest), { encoding: 'utf8' });
+  fs.writeFileSync(PAGE_DIGEST, generateDigestPage(todayChildren, upcomingEvents), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_DIGEST_HISTORY, generateDigestHistoryPage(historyEntries), { encoding: 'utf8' });
-  fs.writeFileSync(PAGE_INDEX, generateIndexPage(), { encoding: 'utf8' });
+  fs.writeFileSync(PAGE_INDEX, generateHomePage(todayChildren), { encoding: 'utf8' });
 
   console.log(`Wrote ${SUMMARY_TXT}, ${PAGE_ALL}, ${PAGE_MSG_INBOX}, ${PAGE_DIGEST}, ${PAGE_DIGEST_HISTORY}, ${PAGE_INDEX}`);
   if (anySessionExpired) process.exit(2);

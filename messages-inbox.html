@@ -48,15 +48,17 @@
     background: var(--card-bg);
   }
   .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .nav-link.secondary { opacity: 0.65; font-size: 12px; }
   header { margin-bottom: 20px; text-align: center; }
   header h1 { font-size: 22px; margin: 0 0 4px; }
   header p { color: var(--sub-text); margin: 0; font-size: 14px; }
   .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 18px;
     padding: 20px;
     margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
   .card h2 { margin: 0 0 4px; font-size: 19px; }
   .card h3 { margin: 0 0 10px; font-size: 15px; }
@@ -149,53 +151,27 @@
     padding-top: 10px;
     border-top: 1px dashed var(--border);
   }
-  .digest-child { margin-bottom: 22px; }
-  .digest-child:last-child { margin-bottom: 0; }
-  .digest-child h3 { display: flex; align-items: center; gap: 8px; }
-  .digest-bucket { margin: 10px 0; }
-  .digest-bucket h4 { margin: 0 0 6px; font-size: 13px; color: var(--sub-text); }
-  .digest-bucket.action h4 { color: #d64545; }
-  .digest-item { border-bottom: 1px solid var(--border); padding: 8px 0; }
-  .digest-item:last-child { border-bottom: none; }
-  .digest-item > summary { cursor: pointer; list-style: none; font-size: 14px; }
-  .digest-item > summary::-webkit-details-marker { display: none; }
-  .digest-item > summary::before {
-    content: '▸';
-    display: inline-block;
-    margin-inline-end: 6px;
-    color: var(--sub-text);
-    transition: transform .15s;
-  }
-  .digest-item[open] > summary::before { transform: rotate(90deg); }
   .digest-original {
     white-space: pre-wrap;
     font-size: 13px;
     color: var(--sub-text);
-    margin: 8px 0 0 20px;
+    margin: 8px 0 0;
     padding-top: 8px;
     border-top: 1px dashed var(--border);
   }
-  .wa-box {
-    white-space: pre-wrap;
+  .gen-btn, .cal-all-btn, .wa-all-btn {
+    display: inline-block;
     font-size: 13px;
-    line-height: 1.6;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-    direction: rtl;
-  }
-  .copy-btn, .gen-btn {
-    font-size: 13px;
-    padding: 8px 16px;
-    border-radius: 8px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 999px;
     border: 1px solid var(--accent);
     background: var(--accent);
     color: #fff;
     cursor: pointer;
-    margin-bottom: 12px;
+    text-decoration: none;
   }
-  .copy-btn.copied { background: #3fa15e; border-color: #3fa15e; }
+  .cal-all-btn, .wa-all-btn { background: var(--card-bg); color: var(--text); border-color: var(--border); }
   .gen-btn:disabled { opacity: 0.6; cursor: default; }
   .history-list { display: flex; flex-wrap: wrap; gap: 8px; }
   .history-list a {
@@ -207,20 +183,97 @@
     color: var(--text);
     text-decoration: none;
   }
+
+  /* ---- School HQ home dashboard ---- */
+  .today-banner { text-align: center; }
+  .today-banner h2 { margin: 0 0 2px; font-size: 20px; }
+  .child-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .child-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--child-c, var(--accent));
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .child-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .child-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--child-c, var(--accent)) 18%, transparent);
+  }
+  .child-card-head h3 { margin: 0; font-size: 17px; }
+  .home-section { margin-bottom: 10px; }
+  .home-section:last-child { margin-bottom: 0; }
+  .home-section h4 { margin: 0 0 4px; font-size: 12px; color: var(--sub-text); }
+  .home-item-list { margin: 0; padding-inline-start: 18px; font-size: 13px; line-height: 1.5; }
+  .more-link { font-size: 12px; color: var(--accent); text-decoration: none; }
+  .all-clear { color: var(--sub-text); font-size: 14px; margin: 0; }
+
+  /* ---- Today's Digest ---- */
+  .digest-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .child-digest { border-top: 4px solid var(--child-c, var(--accent)); }
+  .child-digest h3 { margin: 0 0 12px; font-size: 18px; }
+  .digest-section { margin-bottom: 14px; }
+  .digest-section:last-child { margin-bottom: 0; }
+  .digest-section h4 { margin: 0 0 8px; font-size: 13px; color: var(--sub-text); }
+  .item-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .item-card:last-child { margin-bottom: 0; }
+  .item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .chip {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    color: var(--c);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .item-date { font-size: 12px; color: var(--sub-text); white-space: nowrap; }
+  .item-title { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+  .item-detail { font-size: 13px; color: var(--sub-text); margin: 2px 0 8px; }
+  .item-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .btn-mini {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .original-toggle { margin-top: 8px; font-size: 12px; }
+  .original-toggle summary { cursor: pointer; color: var(--sub-text); list-style: none; }
+  .original-toggle summary::-webkit-details-marker { display: none; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <nav class="pagenav">
-    <a class="nav-link" href="digest.html">סיכום יומי</a>
+    <a class="nav-link" href="index.html">🎒 School HQ</a>
   
-    <a class="nav-link" href="notifications-14days.html">כל ההתראות (14 יום)</a>
+    <a class="nav-link" href="digest.html">✨ סיכום היום</a>
   
-    <a class="nav-link active" href="messages-inbox.html">הודעות נכנסות</a>
+    <a class="nav-link secondary" href="notifications-14days.html">כל ההתראות</a>
+  
+    <a class="nav-link secondary active" href="messages-inbox.html">הודעות נכנסות</a>
   </nav>
     <header>
       <h1>הודעות נכנסות</h1>
-      <p>Generated 18/09/2026, 20:47:45</p>
+      <p>Generated 18/09/2026, 21:10:51</p>
     </header>
     
     <section class="card">
@@ -547,21 +600,6 @@
 
       [childSel, catSel, subcatSel].forEach(function (sel) {
         if (sel) sel.addEventListener('change', applyFilters);
-      });
-    })();
-
-    (function () {
-      var btn = document.getElementById('wa-copy-btn');
-      var box = document.getElementById('wa-text');
-      if (!btn || !box) return;
-      btn.addEventListener('click', function () {
-        navigator.clipboard.writeText(box.textContent).then(function () {
-          btn.textContent = 'הועתק!';
-          btn.classList.add('copied');
-          setTimeout(function () { btn.textContent = 'העתק לוואטסאפ'; btn.classList.remove('copied'); }, 1800);
-        }).catch(function () {
-          btn.textContent = 'לא ניתן להעתיק';
-        });
       });
     })();
 
