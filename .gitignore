@@ -4,3 +4,4 @@ node_modules/
 notifications-latest-*.json
 notifications-summary.txt
 digests/*.json
+digests/daily-digest.txt

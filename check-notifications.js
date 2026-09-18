@@ -11,6 +11,7 @@ const PAGE_INDEX = path.join(DIR, 'index.html');
 const PAGE_DIGEST = path.join(DIR, 'digest.html');
 const PAGE_DIGEST_HISTORY = path.join(DIR, 'digest-history.html');
 const DIGESTS_DIR = path.join(DIR, 'digests');
+const DIGEST_TXT = path.join(DIGESTS_DIR, 'daily-digest.txt');
 const WINDOW_DAYS = 14;
 const UNKNOWN_CHILD = 'לא ברור למי';
 
@@ -1421,6 +1422,7 @@ function generateDigestHistoryPage(historyEntries) {
     { encoding: 'utf8' }
   );
   fs.writeFileSync(path.join(DIGESTS_DIR, `digest-${todayDate}.html`), generateDigestPage(todayChildren, upcomingEvents), { encoding: 'utf8' });
+  fs.writeFileSync(DIGEST_TXT, todayDigestWhatsAppText(todayChildren), { encoding: 'utf8' });
 
   const historyEntries = fs.readdirSync(DIGESTS_DIR)
     .filter(f => /^digest-\d{4}-\d{2}-\d{2}\.json$/.test(f))
