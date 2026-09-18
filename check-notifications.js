@@ -8,7 +8,11 @@ const SUMMARY_TXT = path.join(DIR, 'notifications-summary.txt');
 const PAGE_ALL = path.join(DIR, 'notifications-14days.html');
 const PAGE_MSG_INBOX = path.join(DIR, 'messages-inbox.html');
 const PAGE_INDEX = path.join(DIR, 'index.html');
+const PAGE_DIGEST = path.join(DIR, 'digest.html');
+const PAGE_DIGEST_HISTORY = path.join(DIR, 'digest-history.html');
+const DIGESTS_DIR = path.join(DIR, 'digests');
 const WINDOW_DAYS = 14;
+const UNKNOWN_CHILD = 'לא ברור למי';
 
 // Messages (תיבת הודעות) are shared per SCHOOL, not per child — Ramat Aviv's
 // messages are identical whether איתן or עלמה is the selected student, and
@@ -339,6 +343,151 @@ function subcategoryColor(s) {
   return SUBCATEGORY_COLORS[s] || '#7a7f8a';
 }
 
+// ---- Daily Family Digest ----
+// Buckets today's notifications/messages per child into: action items (things
+// the parent must do), upcoming dated events, and general need-to-know info.
+// Kept separate from classifyImportance/extractSubcategory (which drive the
+// 14-day table) because the digest cares about parent-actionability, not the
+// raw event taxonomy.
+const DIGEST_ACTION_RE = /(לחתום|חתימה|יש לאשר|נדרש אישור|לאשר|לשלם|תשלום|למלא\s*טופס|נא\s*למלא|יש\s*להביא|נא\s*להביא|יש\s*להצטייד|להביא)/;
+const DIGEST_DATE_EVENT_RE = /(מבחן|בוחן|טיול|מסיבה|אירוע|יום\s*הורים|טקס|יום\s*ספורט|יום\s*גיבוש)/;
+const DIGEST_CANCEL_RE = /(בוטל|התבטל|מבוטל|נדחה|נדחית|שינוי\s*בשעות|שינוי\s*במערכת)/;
+const DIGEST_INFO_RE = /(מילה טובה|ציון|הפרע|חיסור|איחור|אי הכנ|אי הבאת ציוד|עודכנו עבורך שיעורי-בית)/;
+
+function isToday(d) {
+  if (!d) return false;
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+}
+
+function classifyDigestBucket(text) {
+  if (DIGEST_ACTION_RE.test(text)) return 'action';
+  if (DIGEST_DATE_EVENT_RE.test(text) || DIGEST_CANCEL_RE.test(text)) return 'dates';
+  if (DIGEST_INFO_RE.test(text)) return 'info';
+  return null;
+}
+
+function digestItemFromNotification(row) {
+  const bucket = classifyDigestBucket(row.content);
+  if (!bucket) return null;
+  const subcategory = extractSubcategory(row.content);
+  const subject = extractSubject(row.content);
+  let text = row.content;
+  if (bucket === 'info' && subcategory !== 'אחר') {
+    text = subject ? `${subcategory} בשיעור ${subject}` : subcategory;
+  }
+  return {
+    bucket,
+    text,
+    source: { type: 'notification', date: row.date, category: row.category, content: row.content },
+  };
+}
+
+function digestItemFromMessage(msg, fallbackChild) {
+  const combined = `${msg.subject} ${msg.summary || msg.body || ''}`;
+  let bucket = classifyDigestBucket(combined);
+  if (!bucket) {
+    if (isRoutineMessage(msg.subject)) return null;
+    bucket = 'info';
+  }
+  const text = msg.summary || msg.subject;
+  return {
+    bucket,
+    text,
+    source: { type: 'message', date: msg.date, sender: msg.sender, subject: msg.subject, body: msg.body },
+  };
+}
+
+// A school-wide message doesn't name a specific child, but if only one of the
+// several children covered by that school appears by name in the text, it's
+// clearly meant for that child alone rather than all of them.
+function attributeMessageChildren(msg, candidateChildren) {
+  if (candidateChildren.length <= 1) return candidateChildren;
+  const text = `${msg.subject} ${msg.body || ''}`;
+  const named = candidateChildren.filter(name => text.includes(name));
+  return named.length ? named : candidateChildren;
+}
+
+function emptyDigestBuckets() {
+  return { action: [], dates: [], info: [] };
+}
+
+function pushDigestItem(bucketsByChild, child, item) {
+  if (!bucketsByChild[child]) bucketsByChild[child] = emptyDigestBuckets();
+  const list = bucketsByChild[child][item.bucket];
+  const existing = list.find(i => i.text === item.text);
+  if (existing) {
+    existing.count = (existing.count || 1) + 1;
+  } else {
+    list.push({ ...item, count: 1 });
+  }
+}
+
+function buildDailyDigest(children, messageSources) {
+  const now = new Date();
+  const bucketsByChild = {};
+  const childOrder = children.map(c => c.name);
+
+  for (const { name, rows } of children) {
+    for (const r of rows) {
+      const d = parseRowDate(r.date);
+      if (!isToday(d)) continue;
+      const item = digestItemFromNotification(r);
+      if (item) pushDigestItem(bucketsByChild, name, item);
+    }
+  }
+
+  for (const { children: candidateChildren, messages } of messageSources) {
+    for (const m of messages) {
+      const d = parseMsgDate(m.date);
+      if (!isToday(d)) continue;
+      const item = digestItemFromMessage(m);
+      if (!item) continue;
+      const targets = attributeMessageChildren(m, candidateChildren.length ? candidateChildren : [UNKNOWN_CHILD]);
+      for (const child of targets) pushDigestItem(bucketsByChild, child, item);
+    }
+  }
+
+  const allChildren = [...new Set([...childOrder, ...Object.keys(bucketsByChild)])];
+  const digestChildren = allChildren
+    .map(name => ({ name, buckets: bucketsByChild[name] || emptyDigestBuckets() }))
+    .filter(c => c.name !== UNKNOWN_CHILD || (c.buckets.action.length + c.buckets.dates.length + c.buckets.info.length) > 0);
+
+  return {
+    date: now.toISOString().slice(0, 10),
+    dateDisplay: now.toLocaleDateString('he-IL'),
+    generatedAt: now.toISOString(),
+    children: digestChildren,
+  };
+}
+
+function digestToWhatsAppText(digest) {
+  const lines = [`📚 סיכום משפחתי – ${digest.dateDisplay}`];
+  const icons = { 'אלה': '👧', 'איתן': '👦', 'עלמה': '👧' };
+  for (const { name, buckets } of digest.children) {
+    const total = buckets.action.length + buckets.dates.length + buckets.info.length;
+    lines.push('');
+    lines.push(`${icons[name] || '🧒'} ${name}`);
+    if (total === 0) {
+      lines.push('אין עדכונים חשובים היום.');
+      continue;
+    }
+    if (buckets.action.length) {
+      lines.push('🔴 צריך לעשות');
+      for (const i of buckets.action) lines.push(`• ${i.text}${i.count > 1 ? ` (×${i.count})` : ''}`);
+    }
+    if (buckets.info.length) {
+      lines.push('📌 חשוב לדעת');
+      for (const i of buckets.info) lines.push(`• ${i.text}${i.count > 1 ? ` (×${i.count})` : ''}`);
+    }
+    if (buckets.dates.length) {
+      lines.push('📅 תאריכים קרובים');
+      for (const i of buckets.dates) lines.push(`• ${i.text}${i.count > 1 ? ` (×${i.count})` : ''}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 // Cross-cutting statistical insights: which subject/lesson draws the most concern
 // events, which concern type repeats most, and how children compare to each other.
 function generateInsights(children) {
@@ -383,14 +532,6 @@ function generateInsights(children) {
   return insights;
 }
 
-const CATEGORY_COLORS = {
-  'ציונים שוטפים': '#2f6fed',
-  'אירועי שיעור': '#e0913f',
-  'נושאי שיעור ושיעורי-בית': '#3fa15e',
-};
-function categoryColor(cat) {
-  return CATEGORY_COLORS[cat] || '#7a7f8a';
-}
 function htmlEscape(s) {
   return String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -398,6 +539,7 @@ function htmlEscape(s) {
 }
 
 const NAV_PAGES = [
+  { file: 'digest.html', label: 'סיכום יומי' },
   { file: 'notifications-14days.html', label: 'כל ההתראות (14 יום)' },
   { file: 'messages-inbox.html', label: 'הודעות נכנסות' },
 ];
@@ -556,6 +698,64 @@ function pageShell(title, activeFile, bodyHtml) {
     padding-top: 10px;
     border-top: 1px dashed var(--border);
   }
+  .digest-child { margin-bottom: 22px; }
+  .digest-child:last-child { margin-bottom: 0; }
+  .digest-child h3 { display: flex; align-items: center; gap: 8px; }
+  .digest-bucket { margin: 10px 0; }
+  .digest-bucket h4 { margin: 0 0 6px; font-size: 13px; color: var(--sub-text); }
+  .digest-bucket.action h4 { color: #d64545; }
+  .digest-item { border-bottom: 1px solid var(--border); padding: 8px 0; }
+  .digest-item:last-child { border-bottom: none; }
+  .digest-item > summary { cursor: pointer; list-style: none; font-size: 14px; }
+  .digest-item > summary::-webkit-details-marker { display: none; }
+  .digest-item > summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-inline-end: 6px;
+    color: var(--sub-text);
+    transition: transform .15s;
+  }
+  .digest-item[open] > summary::before { transform: rotate(90deg); }
+  .digest-original {
+    white-space: pre-wrap;
+    font-size: 13px;
+    color: var(--sub-text);
+    margin: 8px 0 0 20px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .wa-box {
+    white-space: pre-wrap;
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    direction: rtl;
+  }
+  .copy-btn, .gen-btn {
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .copy-btn.copied { background: #3fa15e; border-color: #3fa15e; }
+  .gen-btn:disabled { opacity: 0.6; cursor: default; }
+  .history-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .history-list a {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+  }
 </style>
 </head>
 <body>
@@ -627,6 +827,38 @@ function pageShell(title, activeFile, bodyHtml) {
         if (sel) sel.addEventListener('change', applyFilters);
       });
     })();
+
+    (function () {
+      var btn = document.getElementById('wa-copy-btn');
+      var box = document.getElementById('wa-text');
+      if (!btn || !box) return;
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(box.textContent).then(function () {
+          btn.textContent = 'הועתק!';
+          btn.classList.add('copied');
+          setTimeout(function () { btn.textContent = 'העתק לוואטסאפ'; btn.classList.remove('copied'); }, 1800);
+        }).catch(function () {
+          btn.textContent = 'לא ניתן להעתיק';
+        });
+      });
+    })();
+
+    (function () {
+      var btn = document.getElementById('gen-digest-btn');
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        btn.disabled = true;
+        var original = btn.textContent;
+        btn.textContent = 'מייצר סיכום… (עד דקה)';
+        fetch('/api/generate-digest', { method: 'POST' })
+          .then(function (res) { if (!res.ok) throw new Error('failed'); return res.json(); })
+          .then(function () { window.location.href = 'digest.html'; })
+          .catch(function () {
+            btn.textContent = 'זמין רק כשמריצים node server.js מקומית';
+            setTimeout(function () { btn.textContent = original; btn.disabled = false; }, 3000);
+          });
+      });
+    })();
   </script>
 </body>
 </html>`;
@@ -682,7 +914,6 @@ function generateAllNotificationsPage(children) {
     <tr data-child="${htmlEscape(r.child)}" data-category="${htmlEscape(r.category)}" data-subcategory="${htmlEscape(r.subcategory)}">
       <td class="date-cell" data-sort="${r._d ? r._d.getTime() : 0}">${htmlEscape(r.date)}</td>
       <td class="child-cell">${htmlEscape(r.child)}</td>
-      <td class="cat-cell"><span class="cat-badge" style="--c:${categoryColor(r.category)}">${htmlEscape(r.category)}</span></td>
       <td class="cat-cell"><span class="cat-badge" style="--c:${subcategoryColor(r.subcategory)}">${htmlEscape(r.subcategory)}</span></td>
       <td class="subject-cell">${htmlEscape(r.subject)}</td>
       <td>${htmlEscape(r.content)}</td>
@@ -696,7 +927,7 @@ function generateAllNotificationsPage(children) {
       ${filters}
       ${all.length ? `
       <table>
-        <thead><tr><th>Date</th><th>Child</th><th>Category</th><th>Subcategory</th><th>Subject</th><th>Notification</th></tr></thead>
+        <thead><tr><th>Date</th><th>Child</th><th>Subcategory</th><th>Subject</th><th>Notification</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>` : '<p class="empty">No notifications in this window.</p>'}
     </section>
@@ -740,10 +971,88 @@ function generateMessagesInboxPage(sources) {
   return pageShell('הודעות נכנסות', 'messages-inbox.html', body);
 }
 
+const DIGEST_ICONS = { 'אלה': '👧', 'איתן': '👦', 'עלמה': '👧' };
+const DIGEST_BUCKET_META = [
+  { key: 'action', label: 'צריך לעשות', icon: '🔴' },
+  { key: 'info', label: 'חשוב לדעת', icon: '📌' },
+  { key: 'dates', label: 'תאריכים קרובים', icon: '📅' },
+];
+
+function digestOriginalHtml(source) {
+  if (source.type === 'notification') {
+    return `<div class="digest-original">[${htmlEscape(source.category)}] ${htmlEscape(source.date)}<br>${htmlEscape(source.content)}</div>`;
+  }
+  return `<div class="digest-original">${htmlEscape(source.sender)} · ${htmlEscape(source.date)}<br><strong>${htmlEscape(source.subject)}</strong><br>${htmlEscape(source.body || 'אין תוכן זמין.')}</div>`;
+}
+
+function generateDigestBody(digest, opts = {}) {
+  const total = digest.children.reduce((sum, c) => sum + c.buckets.action.length + c.buckets.info.length + c.buckets.dates.length, 0);
+
+  const childCards = digest.children.map(({ name, buckets }) => {
+    const bucketTotal = buckets.action.length + buckets.info.length + buckets.dates.length;
+    const bucketsHtml = bucketTotal === 0
+      ? '<p class="empty">אין עדכונים חשובים היום.</p>'
+      : DIGEST_BUCKET_META.map(({ key, label, icon }) => {
+          const items = buckets[key];
+          if (!items.length) return '';
+          const itemsHtml = items.map(i => `
+            <details class="digest-item">
+              <summary>${htmlEscape(i.text)}${i.count > 1 ? ` <span class="msg-meta">(×${i.count})</span>` : ''}</summary>
+              ${digestOriginalHtml(i.source)}
+            </details>
+          `).join('');
+          return `<div class="digest-bucket ${key}"><h4>${icon} ${htmlEscape(label)}</h4>${itemsHtml}</div>`;
+        }).join('');
+    return `
+      <div class="digest-child">
+        <h3>${DIGEST_ICONS[name] || '🧒'} ${htmlEscape(name)}</h3>
+        ${bucketsHtml}
+      </div>
+    `;
+  }).join('');
+
+  const waText = htmlEscape(digestToWhatsAppText(digest)).replace(/<br>/g, '\n');
+
+  return `
+    <section class="card">
+      <p class="sub" dir="ltr">${digest.dateDisplay} · ${total} items across all children${opts.historyLink ? '' : ''}</p>
+      ${childCards}
+    </section>
+    <section class="card">
+      <h3>טקסט לשליחה בוואטסאפ</h3>
+      <button class="copy-btn" id="wa-copy-btn">העתק לוואטסאפ</button>
+      <div class="wa-box" id="wa-text">${waText}</div>
+    </section>
+  `;
+}
+
+function generateDigestPage(digest) {
+  const body = `
+    <section class="card">
+      <button class="gen-btn" id="gen-digest-btn">צור סיכום להיום</button>
+      <a class="nav-link" href="digest-history.html">היסטוריית סיכומים ←</a>
+    </section>
+    ${generateDigestBody(digest)}
+  `;
+  return pageShell(`סיכום משפחתי – ${digest.dateDisplay}`, 'digest.html', body);
+}
+
+function generateDigestHistoryPage(historyEntries) {
+  const links = historyEntries.map(({ date, dateDisplay }) => `<a href="digests/digest-${date}.html">${htmlEscape(dateDisplay)}</a>`).join('');
+  const body = `
+    <section class="card">
+      <h3>היסטוריית סיכומים</h3>
+      ${historyEntries.length ? `<div class="history-list">${links}</div>` : '<p class="empty">אין עדיין סיכומים שמורים.</p>'}
+    </section>
+  `;
+  return pageShell('היסטוריית סיכומים יומיים', '', body);
+}
+
 function generateIndexPage() {
   const body = `
     <section class="card">
-      <p class="sub">בחרו דף מהתפריט למעלה.</p>
+      <p class="sub">בחרו דף מהתפריט למעלה, או צרו סיכום יומי חדש.</p>
+      <button class="gen-btn" id="gen-digest-btn">צור סיכום להיום</button>
     </section>
   `;
   return pageShell('סיכום התראות Webtop', '', body);
@@ -813,12 +1122,30 @@ function generateIndexPage() {
 
   await browser.close();
 
+  if (!fs.existsSync(DIGESTS_DIR)) fs.mkdirSync(DIGESTS_DIR);
+
+  const digest = buildDailyDigest(htmlChildren, messageSources);
+  fs.writeFileSync(path.join(DIGESTS_DIR, `digest-${digest.date}.json`), JSON.stringify(digest, null, 2), { encoding: 'utf8' });
+  fs.writeFileSync(path.join(DIGESTS_DIR, `digest-${digest.date}.html`), generateDigestPage(digest), { encoding: 'utf8' });
+
+  const historyEntries = fs.readdirSync(DIGESTS_DIR)
+    .filter(f => /^digest-\d{4}-\d{2}-\d{2}\.json$/.test(f))
+    .map(f => {
+      const date = f.match(/\d{4}-\d{2}-\d{2}/)[0];
+      let dateDisplay = date;
+      try { dateDisplay = JSON.parse(fs.readFileSync(path.join(DIGESTS_DIR, f), 'utf8')).dateDisplay; } catch (e) {}
+      return { date, dateDisplay };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+
   fs.writeFileSync(SUMMARY_TXT, summaryLines.join('\n'), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_ALL, generateAllNotificationsPage(htmlChildren), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_MSG_INBOX, generateMessagesInboxPage(messageSources), { encoding: 'utf8' });
+  fs.writeFileSync(PAGE_DIGEST, generateDigestPage(digest), { encoding: 'utf8' });
+  fs.writeFileSync(PAGE_DIGEST_HISTORY, generateDigestHistoryPage(historyEntries), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_INDEX, generateIndexPage(), { encoding: 'utf8' });
 
-  console.log(`Wrote ${SUMMARY_TXT}, ${PAGE_ALL}, ${PAGE_MSG_INBOX}, ${PAGE_INDEX}`);
+  console.log(`Wrote ${SUMMARY_TXT}, ${PAGE_ALL}, ${PAGE_MSG_INBOX}, ${PAGE_DIGEST}, ${PAGE_DIGEST_HISTORY}, ${PAGE_INDEX}`);
   if (anySessionExpired) process.exit(2);
 })().catch(e => {
   fs.writeFileSync(SUMMARY_TXT, `[${new Date().toISOString()}] ERROR: ${e.message}\n`);

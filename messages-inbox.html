@@ -146,18 +146,78 @@
     padding-top: 10px;
     border-top: 1px dashed var(--border);
   }
+  .digest-child { margin-bottom: 22px; }
+  .digest-child:last-child { margin-bottom: 0; }
+  .digest-child h3 { display: flex; align-items: center; gap: 8px; }
+  .digest-bucket { margin: 10px 0; }
+  .digest-bucket h4 { margin: 0 0 6px; font-size: 13px; color: var(--sub-text); }
+  .digest-bucket.action h4 { color: #d64545; }
+  .digest-item { border-bottom: 1px solid var(--border); padding: 8px 0; }
+  .digest-item:last-child { border-bottom: none; }
+  .digest-item > summary { cursor: pointer; list-style: none; font-size: 14px; }
+  .digest-item > summary::-webkit-details-marker { display: none; }
+  .digest-item > summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-inline-end: 6px;
+    color: var(--sub-text);
+    transition: transform .15s;
+  }
+  .digest-item[open] > summary::before { transform: rotate(90deg); }
+  .digest-original {
+    white-space: pre-wrap;
+    font-size: 13px;
+    color: var(--sub-text);
+    margin: 8px 0 0 20px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .wa-box {
+    white-space: pre-wrap;
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    direction: rtl;
+  }
+  .copy-btn, .gen-btn {
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .copy-btn.copied { background: #3fa15e; border-color: #3fa15e; }
+  .gen-btn:disabled { opacity: 0.6; cursor: default; }
+  .history-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .history-list a {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
     <nav class="pagenav">
+    <a class="nav-link" href="digest.html">סיכום יומי</a>
+  
     <a class="nav-link" href="notifications-14days.html">כל ההתראות (14 יום)</a>
   
     <a class="nav-link active" href="messages-inbox.html">הודעות נכנסות</a>
   </nav>
     <header>
       <h1>הודעות נכנסות</h1>
-      <p>Generated 18/09/2026, 19:18:24</p>
+      <p>Generated 18/09/2026, 20:34:30</p>
     </header>
     
     <section class="card">
@@ -484,6 +544,38 @@
 
       [childSel, catSel, subcatSel].forEach(function (sel) {
         if (sel) sel.addEventListener('change', applyFilters);
+      });
+    })();
+
+    (function () {
+      var btn = document.getElementById('wa-copy-btn');
+      var box = document.getElementById('wa-text');
+      if (!btn || !box) return;
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(box.textContent).then(function () {
+          btn.textContent = 'הועתק!';
+          btn.classList.add('copied');
+          setTimeout(function () { btn.textContent = 'העתק לוואטסאפ'; btn.classList.remove('copied'); }, 1800);
+        }).catch(function () {
+          btn.textContent = 'לא ניתן להעתיק';
+        });
+      });
+    })();
+
+    (function () {
+      var btn = document.getElementById('gen-digest-btn');
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        btn.disabled = true;
+        var original = btn.textContent;
+        btn.textContent = 'מייצר סיכום… (עד דקה)';
+        fetch('/api/generate-digest', { method: 'POST' })
+          .then(function (res) { if (!res.ok) throw new Error('failed'); return res.json(); })
+          .then(function () { window.location.href = 'digest.html'; })
+          .catch(function () {
+            btn.textContent = 'זמין רק כשמריצים node server.js מקומית';
+            setTimeout(function () { btn.textContent = original; btn.disabled = false; }, 3000);
+          });
       });
     })();
   </script>
