@@ -930,7 +930,7 @@ function generateAllNotificationsPage(children) {
       ${filters}
       ${all.length ? `
       <table>
-        <thead><tr><th>Date</th><th>Child</th><th>Subcategory</th><th>Subject</th><th>Notification</th></tr></thead>
+        <thead><tr><th>Date</th><th>Child</th><th>Topic</th><th>Subject</th><th>Notification</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>` : '<p class="empty">No notifications in this window.</p>'}
     </section>
