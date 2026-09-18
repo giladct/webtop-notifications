@@ -781,7 +781,7 @@ function pageShell(title, activeFile, bodyHtml) {
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 20px 16px 60px;
+    padding: 16px 10px 60px;
     background: var(--bg);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
@@ -790,9 +790,9 @@ function pageShell(title, activeFile, bodyHtml) {
   nav.pagenav {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   .nav-link {
     font-size: 13px;
@@ -812,14 +812,14 @@ function pageShell(title, activeFile, bodyHtml) {
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 18px;
-    padding: 20px;
-    margin-bottom: 20px;
+    padding: 16px;
+    margin-bottom: 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
   .card h2 { margin: 0 0 4px; font-size: 19px; }
   .card h3 { margin: 0 0 10px; font-size: 15px; }
   .sub { color: var(--sub-text); margin: 0 0 14px; font-size: 14px; }
-  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
   .pill {
     font-size: 13px;
     padding: 4px 10px;
@@ -829,8 +829,9 @@ function pageShell(title, activeFile, bodyHtml) {
     border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
     white-space: nowrap;
   }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
   th { color: var(--sub-text); font-weight: 600; font-size: 12px; text-transform: uppercase; }
   th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
   th.sortable:hover { color: var(--text); }
@@ -856,16 +857,17 @@ function pageShell(title, activeFile, bodyHtml) {
     line-height: 1.3;
   }
   @media (max-width: 640px) {
-    .cat-cell { width: 64px; max-width: 64px; }
-    .subject-cell { max-width: 64px; }
-    .date-cell { max-width: 60px; }
-    table { font-size: 13px; }
-    th, td { padding: 6px; }
+    .card { padding: 12px; margin-bottom: 12px; }
+    .cat-cell { width: 54px; max-width: 54px; }
+    .subject-cell { max-width: 54px; }
+    .date-cell { max-width: 52px; }
+    table { font-size: 12px; }
+    th, td { padding: 4px 5px; }
   }
   .empty { color: var(--sub-text); font-size: 14px; }
   ul.insights { margin: 0; padding-inline-start: 20px; font-size: 14px; line-height: 1.7; }
   ul.insights li { margin-bottom: 4px; }
-  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
   .filters select {
     font-size: 13px;
     padding: 6px 10px;
@@ -1169,10 +1171,12 @@ function generateAllNotificationsPage(children) {
       <p class="sub" dir="ltr">${all.length} notifications across all children in the last ${WINDOW_DAYS} days</p>
       ${filters}
       ${all.length ? `
+      <div class="table-scroll">
       <table>
-        <thead><tr><th>Date</th><th>Child</th><th>Topic</th><th>Subject</th><th>Notification</th></tr></thead>
+        <thead><tr><th>Date</th><th>Child</th><th>Topic</th><th>Subj</th><th>Notification</th></tr></thead>
         <tbody>${tableRows}</tbody>
-      </table>` : '<p class="empty">No notifications in this window.</p>'}
+      </table>
+      </div>` : '<p class="empty">No notifications in this window.</p>'}
     </section>
   `;
   return pageShell('כל ההתראות ב-14 יום האחרונים', 'notifications-14days.html', body);
