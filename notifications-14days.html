@@ -81,21 +81,24 @@
   th.sort-desc::after { content: '▼'; opacity: 1; font-size: 9px; }
   .date-cell { white-space: normal; word-break: break-word; color: var(--sub-text); font-size: 13px; max-width: 80px; }
   .child-cell { white-space: nowrap; font-weight: 600; width: 1%; }
-  .cat-cell { max-width: 90px; }
+  .cat-cell { width: 90px; max-width: 90px; }
   .subject-cell { max-width: 90px; color: var(--sub-text); font-size: 13px; }
   .cat-badge {
     display: inline-block;
+    max-width: 100%;
+    box-sizing: border-box;
     font-size: 12px;
     padding: 2px 8px;
     border-radius: 6px;
     background: color-mix(in srgb, var(--c) 15%, transparent);
     color: var(--c);
     white-space: normal;
+    overflow-wrap: break-word;
     word-break: break-word;
     line-height: 1.3;
   }
   @media (max-width: 640px) {
-    .cat-cell { max-width: 64px; }
+    .cat-cell { width: 64px; max-width: 64px; }
     .subject-cell { max-width: 64px; }
     .date-cell { max-width: 60px; }
     table { font-size: 13px; }
@@ -217,7 +220,7 @@
   </nav>
     <header>
       <h1>כל ההתראות ב-14 יום האחרונים</h1>
-      <p>Generated 18/09/2026, 20:34:30</p>
+      <p>Generated 18/09/2026, 20:41:19</p>
     </header>
     
     
