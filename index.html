@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סיכום התראות Webtop — Webtop</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1c1e21;
+    --sub-text: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2f6fed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --card-bg: #1f2227;
+      --text: #eaecef;
+      --sub-text: #9aa0a8;
+      --border: #2c2f36;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px 16px 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  nav.pagenav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .nav-link {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--sub-text);
+    text-decoration: none;
+    background: var(--card-bg);
+  }
+  .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+  header { margin-bottom: 20px; text-align: center; }
+  header h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { color: var(--sub-text); margin: 0; font-size: 14px; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 19px; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .sub { color: var(--sub-text); margin: 0 0 14px; font-size: 14px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .pill {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    white-space: nowrap;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+  th { color: var(--sub-text); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--text); }
+  th.sortable::after { content: ''; display: inline-block; width: 0.6em; opacity: 0.4; }
+  th.sort-asc::after { content: '▲'; opacity: 1; font-size: 9px; }
+  th.sort-desc::after { content: '▼'; opacity: 1; font-size: 9px; }
+  .date-cell { white-space: normal; word-break: break-word; color: var(--sub-text); font-size: 13px; max-width: 80px; }
+  .child-cell { white-space: nowrap; font-weight: 600; width: 1%; }
+  .cat-cell { max-width: 90px; }
+  .subject-cell { max-width: 90px; color: var(--sub-text); font-size: 13px; }
+  .cat-badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  @media (max-width: 640px) {
+    .cat-cell { max-width: 64px; }
+    .subject-cell { max-width: 64px; }
+    .date-cell { max-width: 60px; }
+    table { font-size: 13px; }
+    th, td { padding: 6px; }
+  }
+  .empty { color: var(--sub-text); font-size: 14px; }
+  ul.insights { margin: 0; padding-inline-start: 20px; font-size: 14px; line-height: 1.7; }
+  ul.insights li { margin-bottom: 4px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .filters select {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+  }
+  .msg-item { border-bottom: 1px solid var(--border); padding: 14px 0; }
+  .msg-item:last-child { border-bottom: none; }
+  .msg-item.needs-attention { border-inline-start: 3px solid #d64545; padding-inline-start: 11px; margin-inline-start: -14px; }
+  .attn-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, #d64545 15%, transparent);
+    color: #d64545;
+    white-space: nowrap;
+  }
+  .msg-item > summary { cursor: pointer; list-style: none; }
+  .msg-item > summary::-webkit-details-marker { display: none; }
+  .msg-item > summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-inline-end: 6px;
+    color: var(--sub-text);
+    transition: transform .15s;
+  }
+  .msg-item[open] > summary::before { transform: rotate(90deg); }
+  .msg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .msg-subject { font-weight: 600; font-size: 15px; }
+  .msg-meta { color: var(--sub-text); font-size: 13px; }
+  .msg-summary { font-size: 14px; margin: 4px 0 0; }
+  .msg-body {
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 10px 0 0;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="pagenav">
+    <a class="nav-link" href="notifications-14days.html">כל ההתראות (14 יום)</a>
+  
+    <a class="nav-link" href="messages-inbox.html">הודעות נכנסות</a>
+  </nav>
+    <header>
+      <h1>סיכום התראות Webtop</h1>
+      <p>Generated 18/09/2026, 19:18:24</p>
+    </header>
+    
+    <section class="card">
+      <p class="sub">בחרו דף מהתפריט למעלה.</p>
+    </section>
+  
+  </div>
+  <script>
+    document.querySelectorAll('table').forEach(function (table) {
+      var headRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
+      if (!headRow) return;
+      Array.from(headRow.cells).forEach(function (th, colIndex) {
+        th.classList.add('sortable');
+        th.addEventListener('click', function () {
+          var tbody = table.tBodies[0];
+          if (!tbody) return;
+          var rows = Array.from(tbody.rows);
+          var newDir = th.classList.contains('sort-asc') ? 'desc' : 'asc';
+          Array.from(headRow.cells).forEach(function (c) { c.classList.remove('sort-asc', 'sort-desc'); });
+          th.classList.add(newDir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+          function getValue(row) {
+            var cell = row.cells[colIndex];
+            if (!cell) return '';
+            if (cell.dataset.sort !== undefined) return cell.dataset.sort;
+            return cell.textContent.trim();
+          }
+
+          rows.sort(function (a, b) {
+            var va = getValue(a), vb = getValue(b);
+            var na = Number(va), nb = Number(vb);
+            var cmp;
+            if (va !== '' && vb !== '' && !isNaN(na) && !isNaN(nb)) {
+              cmp = na - nb;
+            } else {
+              cmp = va.localeCompare(vb, 'he');
+            }
+            return newDir === 'asc' ? cmp : -cmp;
+          });
+
+          rows.forEach(function (row) { tbody.appendChild(row); });
+        });
+      });
+    });
+
+    (function () {
+      var childSel = document.getElementById('filter-child');
+      var catSel = document.getElementById('filter-category');
+      var subcatSel = document.getElementById('filter-subcategory');
+      if (!childSel && !catSel && !subcatSel) return;
+
+      function applyFilters() {
+        var childVal = childSel ? childSel.value : '';
+        var catVal = catSel ? catSel.value : '';
+        var subcatVal = subcatSel ? subcatSel.value : '';
+        document.querySelectorAll('tbody tr[data-child]').forEach(function (row) {
+          var show = (!childVal || row.dataset.child === childVal) &&
+                     (!catVal || row.dataset.category === catVal) &&
+                     (!subcatVal || row.dataset.subcategory === subcatVal);
+          row.style.display = show ? '' : 'none';
+        });
+      }
+
+      [childSel, catSel, subcatSel].forEach(function (sel) {
+        if (sel) sel.addEventListener('change', applyFilters);
+      });
+    })();
+  </script>
+</body>
+</html>

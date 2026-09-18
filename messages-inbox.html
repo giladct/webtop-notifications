@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הודעות נכנסות — Webtop</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1c1e21;
+    --sub-text: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2f6fed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --card-bg: #1f2227;
+      --text: #eaecef;
+      --sub-text: #9aa0a8;
+      --border: #2c2f36;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px 16px 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  nav.pagenav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .nav-link {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--sub-text);
+    text-decoration: none;
+    background: var(--card-bg);
+  }
+  .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+  header { margin-bottom: 20px; text-align: center; }
+  header h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { color: var(--sub-text); margin: 0; font-size: 14px; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 19px; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .sub { color: var(--sub-text); margin: 0 0 14px; font-size: 14px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .pill {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    white-space: nowrap;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+  th { color: var(--sub-text); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--text); }
+  th.sortable::after { content: ''; display: inline-block; width: 0.6em; opacity: 0.4; }
+  th.sort-asc::after { content: '▲'; opacity: 1; font-size: 9px; }
+  th.sort-desc::after { content: '▼'; opacity: 1; font-size: 9px; }
+  .date-cell { white-space: normal; word-break: break-word; color: var(--sub-text); font-size: 13px; max-width: 80px; }
+  .child-cell { white-space: nowrap; font-weight: 600; width: 1%; }
+  .cat-cell { max-width: 90px; }
+  .subject-cell { max-width: 90px; color: var(--sub-text); font-size: 13px; }
+  .cat-badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  @media (max-width: 640px) {
+    .cat-cell { max-width: 64px; }
+    .subject-cell { max-width: 64px; }
+    .date-cell { max-width: 60px; }
+    table { font-size: 13px; }
+    th, td { padding: 6px; }
+  }
+  .empty { color: var(--sub-text); font-size: 14px; }
+  ul.insights { margin: 0; padding-inline-start: 20px; font-size: 14px; line-height: 1.7; }
+  ul.insights li { margin-bottom: 4px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .filters select {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+  }
+  .msg-item { border-bottom: 1px solid var(--border); padding: 14px 0; }
+  .msg-item:last-child { border-bottom: none; }
+  .msg-item.needs-attention { border-inline-start: 3px solid #d64545; padding-inline-start: 11px; margin-inline-start: -14px; }
+  .attn-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, #d64545 15%, transparent);
+    color: #d64545;
+    white-space: nowrap;
+  }
+  .msg-item > summary { cursor: pointer; list-style: none; }
+  .msg-item > summary::-webkit-details-marker { display: none; }
+  .msg-item > summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-inline-end: 6px;
+    color: var(--sub-text);
+    transition: transform .15s;
+  }
+  .msg-item[open] > summary::before { transform: rotate(90deg); }
+  .msg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .msg-subject { font-weight: 600; font-size: 15px; }
+  .msg-meta { color: var(--sub-text); font-size: 13px; }
+  .msg-summary { font-size: 14px; margin: 4px 0 0; }
+  .msg-body {
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 10px 0 0;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="pagenav">
+    <a class="nav-link" href="notifications-14days.html">כל ההתראות (14 יום)</a>
+  
+    <a class="nav-link active" href="messages-inbox.html">הודעות נכנסות</a>
+  </nav>
+    <header>
+      <h1>הודעות נכנסות</h1>
+      <p>Generated 18/09/2026, 19:18:24</p>
+    </header>
+    
+    <section class="card">
+      <p class="sub" dir="ltr">20 messages, 1 need attention — click to open</p>
+      
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">תכנית חברתית- ב 2</span>
+          
+          <span class="msg-meta" dir="ltr">15/09/2026</span>
+        </div>
+        <div class="msg-meta">יערן יגאל (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">היום התקיימה פגישה שלי, עם קרן היועצת ועדי המחנכת יחד עם טלי כהן-טל ורותם בר אילן. פגישה זאת היא המשך לפגישה שקיימנו בסיומה של שנה שעברה, בה הועלו נציגות הורי הבנות העלו קשיים בדינמיקות שקיימות בין הבנות של הכיתה ומתוך ניסיון לגבש תכנית שתסייע לשיפור האקלים בי…</p>
+      </summary>
+      <p class="msg-body">שלום לכל הורי ב 2, <br> <br>היום התקיימה פגישה שלי, עם קרן היועצת ועדי המחנכת יחד עם טלי כהן-טל ורותם בר אילן.<br> <br>פגישה זאת היא המשך לפגישה שקיימנו בסיומה של שנה שעברה, בה הועלו נציגות הורי הבנות העלו קשיים בדינמיקות שקיימות בין הבנות של הכיתה ומתוך ניסיון לגבש תכנית שתסייע לשיפור האקלים בין הבנות בפרט, וכפועל יוצא מזה בכיתה עצמה. <br> <br>בפגישה היום הצגנו לטלי ורותם את התכנית שצוות בית הספר גיבש, ואני מביא אותה בקצרה לידיעת כלל ההורים:<br> <br>- תכנית חינוכית שתועבר לבנות הכיתה ע"י היועצת ועדי וכן ע"י גיא (פסיכולוג בית הספר) למשך מספר מפגשים, כאשר לכל מפגש נושא אחר שעוסק בדינמיקות חברתיות (מצ"ב התכנית, אותה עדי תציג בהרחבה באסיפת ההורים, ובסיום כל מפגש יישלח להורים סיכום קצר של הדברים).<br> <br>- שיעורי חינוך לכלל הכיתה בנושאים הקשורים לאקלים הכיתתי (שיעורי מפתח הלב וכישורי חיים).<br> <br>- קבוצות חברתיות שעדי תייצר לצורך חיבורים בין תלמידים ותלמידות.<br> <br>- תורני הפסקות: מיד לאחר סוכות בית הספר יחל במשמרות של תורני הפסקות מקרב תלמידי שכבה ו בחצר של שכבה ב, כך שהם יפעילו אותם במשחקים שרכשנו, ידאגו לתלמידים שהם בודדים, ינסו לגשר על קונפליקטים בין התלמידים וכיו"ב תפקידים, כך שתועצם האחריות של תלמידי ו מצד אחד, וישתפר האקלים החברתי של שכבה ב מצד שני. <br> <br><br>אחת לחודש עדי תקיים פגישה עם ועד הורי הכיתה, ובפגישות אלו ישוקפו התהליכים שקורים בכיתה. חשוב מאוד שאתם ההורים תמשיכו את התהליכים הללו גם במסגרת של אחר שעות הלימודים כדי לייצר שפה משותפת.<br>אני מקווה ומאמין שהשנה הדינמיקות בין הבנות יהיו שונות והדבר יקרין גם באופן כללי על האקלים הכולל של הכיתה. <br><br>בברכה ושנה טובה, <br>יגאל</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג כדורגל בנות בבי"ס רמת אביב ג'</span>
+          
+          <span class="msg-meta" dir="ltr">09/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">החלה ההרשמה חוג כדורגל בנות בבי"ס רמת אביב ג'. מצורף דף הסבר בנושא</p>
+      </summary>
+      <p class="msg-body">שלום לכולם,<br><br>החלה ההרשמה חוג כדורגל בנות בבי"ס רמת אביב ג'.<br><br>מצורף דף הסבר בנושא<br><br>בברכה <br><br>יעל</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג אנגלית בבי"ס רמת אביב ג'</span>
+          
+          <span class="msg-meta" dir="ltr">08/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">הורים יקרים, אנו שמחות לפתוח בבית הספר קבוצות אנגלית קטנות של Osgood. התוכנית משלבת דיבור, קריאה, אוצר מילים וביטחון בשפה, בדרך חווייתית שמעודדת את הילדים להשתמש באנגלית באמת ולא רק ללמוד אותה. מה מחכה לילדים?</p>
+      </summary>
+      <p class="msg-body">הורים יקרים,<br><br>אנו שמחות לפתוח בבית הספר קבוצות אנגלית קטנות של Osgood.<br><br>התוכנית משלבת דיבור, קריאה, אוצר מילים וביטחון בשפה, בדרך חווייתית שמעודדת את הילדים להשתמש באנגלית באמת ולא רק ללמוד אותה.<br><br>מה מחכה לילדים?<br>• קבוצות קטנות<br>• הרבה דיבור ותרגול באנגלית<br>• חיזוק הביטחון והשפה<br>• תוכנית לימודים וספרי לימוד של Osgood<br>• מפגש שבועי בבית הספר<br><br>הקבוצות נפתחות בהתאם לגיל ולרמה ומספר המקומות בכל קבוצה מוגבל.<br><br>לפרטים והרשמה:<br>וואטסאפ 0553069333<br><br>TA@osgood.school</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג כדוריד מכבי תל אביב</span>
+          
+          <span class="msg-meta" dir="ltr">07/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">חוג הכדוריד של מכבי תל אביב מגיע לבית הספר רמת אביב ג'! אנו מזמינים את התלמידים והתלמידות להצטרף לפעילות ספורטיבית, מגבשת ומלאת אנרגיה. ימי ושעות הפעילות: כיתות ג'-ד': ימי שני ורביעי | 14:30–15:30 כיתות ה'-ו': ימי שני ורביעי | 13:30–14:30</p>
+      </summary>
+      <p class="msg-body">חוג הכדוריד של מכבי תל אביב מגיע לבית הספר רמת אביב ג'! אנו מזמינים את התלמידים והתלמידות להצטרף לפעילות ספורטיבית, מגבשת ומלאת אנרגיה.<br><br> ימי ושעות הפעילות:<br><br>כיתות ג'-ד': ימי שני ורביעי | 14:30–15:30<br><br>כיתות ה'-ו': ימי שני ורביעי | 13:30–14:30<br><br> אימון ניסיון: חינם! (ללא התחייבות, לא תקף לנרשמים בעונה הקודמת).<br><br> עלויות:<br><br>פעם בשבוע: 290 ש"ח לחודש + 350 ש"ח חד-פעמי דמי רישום וציוד.<br><br>פעמיים בשבוע: 390 ש"ח לחודש + 400 ש"ח חד-פעמי דמי רישום וציוד.<br><br> ערכת ציוד כוללת: תיק, סט אימון וכדור (הנרשמים לפעמיים בשבוע מקבלים 2 סטים).<br><br> להרשמה לאימון ניסיון ופרטים נוספים: https://clubs.trainlitapp.com/clubs/maccabi_ta_handball</p>
+    </details>
+  
+    <details class="msg-item needs-attention">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">אישור יציאה כללי וגורף לכל הפעילויות</span>
+          <span class="attn-badge">דורש תשומת לב — דורש חתימה/אישור מכם</span>
+          <span class="msg-meta" dir="ltr">06/09/2026</span>
+        </div>
+        <div class="msg-meta">דרעי עדי (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">הורים יקרים, מעבר לפעילות השוטפת הנערכת בין כותלי בית הספר, יוצאים הילדים במהלך השנה לפעילויות שונות ומגוונות מחוץ לשטח בית הספר, ביניהן: סיורים, טיולים, הצגות, סדנאות, ביקורים באתרים שונים ועוד.</p>
+      </summary>
+      <p class="msg-body">הורים יקרים,<br>מעבר לפעילות השוטפת הנערכת בין כותלי בית הספר, יוצאים הילדים במהלך<br>השנה לפעילויות שונות ומגוונות מחוץ לשטח בית הספר, ביניהן: סיורים, טיולים,<br>הצגות, סדנאות, ביקורים באתרים שונים ועוד.<br>השתתפות בפעילויות אלה הינה חלק מתכנית הליבה של בית הספר.<br>חלק מפעילויות אלו נערכות בתחומי העיר תל אביב וחלק מחוץ לעיר. הנפקת<br>אישור עבור כל יציאה משטח בית ספר מהווה תהליך מסורבל וברצוננו לייעל<br>אותו, גם כדי לחסוך ניירת מיותרת וגם עוגמת נפש הנגרמת לילדים שמסיבה<br>כלשהי לא הביאו אישור חתום. לכן, אנו מבקשים אישור עקרוני מראש עבור כלל<br>היציאות מבית הספר.<br>האישור נעשה באופן דיגיטלי על ידי חתימה שלכם<br><br>בברכה<br>עדי</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג ג'ודו בבית ספר רמת אביב ג'</span>
+          
+          <span class="msg-meta" dir="ltr">06/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">הורים יקרים, שמחים להזמין אתכם לאימוני ג'ודו בבית ספר רמת אביב ג'. האימונים מתקיימים באולם הקטן של בית הספר, בימי שני לפי השעות הרשומות בעלון. מחר יתקיים האימון הראשון לעונה.</p>
+      </summary>
+      <p class="msg-body">הורים יקרים,<br>שמחים להזמין אתכם לאימוני ג'ודו בבית ספר רמת אביב ג'.<br>האימונים מתקיימים באולם הקטן של בית הספר, בימי שני לפי השעות הרשומות בעלון.<br>מחר יתקיים האימון הראשון לעונה.<br>האימונים מתקיימים מספטמבר ועד יולי למשך 11 חודשים - בפועל משלמים רק על 10 חודשים  בכפוף לתקנון.<br>לפרטים נוספים ולתיאום אימון ניסיון:<br>קורן - 0559755005<br> <br>--<br><br>בברכה,<br>ערן רחמני<br>052-2422249</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג חדש - סייבר מחשבים בבי"ס רמת אביב ג'</span>
+          
+          <span class="msg-meta" dir="ltr">06/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">להורים שלום, נפתח חוג סייבר מחשבים חדש בבי"ס רמת אביב ג' מצ"ב דף הסבר בנושא</p>
+      </summary>
+      <p class="msg-body">להורים שלום,<br><br><br>נפתח חוג סייבר מחשבים חדש בבי"ס רמת אביב ג'<br><br>מצ"ב דף הסבר בנושא<br><br><br>תודה רבה, ושתהיה לנו שנה טובה ומתוקה!<br>עידו בוסאני<br>מנהל היי אקזיט<br>054-7519718<br>ᐧ<br>ᐧ</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">תשובה ל-שוקולד</span>
+          
+          <span class="msg-meta" dir="ltr">06/09/2026</span>
+        </div>
+        <div class="msg-meta">קוסקוב מקסים (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">קיבלתי, מצויין! מקסים קוסקוב, רכז מדעים, מורה למוזיקה ומנצח הרכבי חליליות בה''ס רמת אביב ג מאת: כהן-טל טלי</p>
+      </summary>
+      <p class="msg-body">שלום!<br><br>קיבלתי, מצויין!<br><br>מקסים קוסקוב,<br><br>רכז מדעים, מורה למוזיקה ומנצח הרכבי חליליות בה''ס רמת אביב ג<br><br><br><br><br>מאת: כהן-טל טלי <br>אל: קוסקוב מקסים <br>05/09/2026 22:21 <br>שוקולד<br><br><br><br><br><br>שיעורי בית</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג אומניות לחימה</span>
+          
+          <span class="msg-meta" dir="ltr">02/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">בוא למצוא את הלוחם שבך! כל אומנויות הלחימה החזקות -במקום אחד לפרטים נוספים:0506330220 מצ"ב דף מידע</p>
+      </summary>
+      <p class="msg-body">בוא למצוא את הלוחם שבך!<br>כל אומנויות הלחימה החזקות -במקום אחד <br>לפרטים נוספים:0506330220<br>מצ"ב דף מידע</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">שיעור ניסיון חקר המדע והרפואה בראשון הקרוב</span>
+          
+          <span class="msg-meta" dir="ltr">02/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">מוזמנים לשיעור ניסיון לחוג חקר המדע והרפואה לפרטים נוספים מצ"דף מידע.</p>
+      </summary>
+      <p class="msg-body">שלום לכולם,<br>מוזמנים לשיעור ניסיון לחוג חקר המדע והרפואה <br>לפרטים נוספים מצ"דף מידע.</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג לגו מכאני – אדיסון 🤖⚙️</span>
+          
+          <span class="msg-meta" dir="ltr">02/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">חוג לגו מכאני – אדיסון מזמינים את ילדיכם להצטרף לשנה של למידה, יצירה והנאה! צעד אחר צעד הילדים מתקדמים מהרכבות פשוטות לפיתוח חשיבה טכנית ויצירתית. שיעור ניסיון – ללא עלות</p>
+      </summary>
+      <p class="msg-body">חוג לגו מכאני – אדיסון <br>מזמינים את ילדיכם להצטרף לשנה של למידה, יצירה והנאה!<br>צעד אחר צעד הילדים מתקדמים מהרכבות פשוטות לפיתוח חשיבה טכנית ויצירתית.<br> <br> שיעור ניסיון – ללא עלות<br> <br> בית ספר רמת אביב ג' | ימי שישי<br>כיתות א' - ד': 11:45<br> <br> טופס הרשמה לשיעור ניסיון(חובה)<br>https://docs.google.com/forms/d/e/1FAIpQLSeWbWy21qalwWKxZELPQGdj-T3QJ0SLbLrumhG43vwMXaw5kQ/viewform?usp=header<br> <br> תקציר פעילות מלא:<br>https://drive.google.com/file/d/16DiHvmZpuQ9x-fFBJ0kZ1kMJJlwvy2Wc/view?usp=sharing</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג כדורגל בנות לשכבת א-ג</span>
+          
+          <span class="msg-meta" dir="ltr">02/09/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">החלה ההרשמה לחוג כדורגל בנות, לפרטים ורשמה מצ"ב דף מידע.</p>
+      </summary>
+      <p class="msg-body">שלום לכולם,<br>החלה ההרשמה לחוג כדורגל בנות,<br>לפרטים ורשמה מצ"ב דף מידע.</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">איגרת לקראת פתיחת שנת הלימודים- תשפ"ז</span>
+          
+          <span class="msg-meta" dir="ltr">30/08/2026</span>
+        </div>
+        <div class="msg-meta">יערן יגאל (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">מצ"ב איגרת לקראת פתיחת שנת הלימודים. מחכים ומצפים לראות את הילדים והילדות ביום שלישי. שתהיה שנה טובה ומוצלחת, יגאל</p>
+      </summary>
+      <p class="msg-body">שלום לכל הורי בית הספר, <br><br>מצ"ב איגרת לקראת פתיחת שנת הלימודים. <br><br>מחכים ומצפים לראות את הילדים והילדות ביום שלישי. <br><br>שתהיה שנה טובה ומוצלחת, <br><br>יגאל</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">חוג לגו מכאני – אדיסון 🤖</span>
+          
+          <span class="msg-meta" dir="ltr">27/08/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">חוג לגו מכאני – אדיסון מזמינים את ילדיכם להצטרף לשנה של למידה, יצירה והנאה! צעד אחר צעד הילדים מתקדמים מהרכבות פשוטות לפיתוח חשיבה טכנית ויצירתית. שיעור ניסיון – ללא עלות</p>
+      </summary>
+      <p class="msg-body">חוג לגו מכאני – אדיסון <br>מזמינים את ילדיכם להצטרף לשנה של למידה, יצירה והנאה!<br>צעד אחר צעד הילדים מתקדמים מהרכבות פשוטות לפיתוח חשיבה טכנית ויצירתית.<br> <br> שיעור ניסיון – ללא עלות<br> <br> בית ספר רמת אביב ג' | ימי שישי<br>כיתות א' - ד': 11:45<br> <br> טופס הרשמה לשיעור ניסיון(חובה)<br>https://docs.google.com/forms/d/e/1FAIpQLSeWbWy21qalwWKxZELPQGdj-T3QJ0SLbLrumhG43vwMXaw5kQ/viewform?usp=header<br> <br> תקציר פעילות מלא:<br>https://drive.google.com/file/d/16DiHvmZpuQ9x-fFBJ0kZ1kMJJlwvy2Wc/view?usp=sharing</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">החלה ההרשמה לחוג אנגלית</span>
+          
+          <span class="msg-meta" dir="ltr">27/08/2026</span>
+        </div>
+        <div class="msg-meta">מזכירות בית הספר (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">הורים יקרים, ההרשמה לחוגי האנגלית לשנת הלימודים הקרובה נפתחה! הילד/ה שלכם מבינים אנגלית, אבל צריכים יותר הזדמנויות לדבר, לקרוא ולהשתמש בשפה בביטחון? חוגי האנגלית מתקיימים בתוך בית הספר, בקבוצות קטנות לפי רמה וגיל, עם מורים דוברי אנגלית שפת אם.</p>
+      </summary>
+      <p class="msg-body">הורים יקרים,<br><br>ההרשמה לחוגי האנגלית לשנת הלימודים הקרובה נפתחה!<br><br>הילד/ה שלכם מבינים אנגלית, אבל צריכים יותר הזדמנויות לדבר, לקרוא ולהשתמש בשפה בביטחון?<br><br>חוגי האנגלית מתקיימים בתוך בית הספר, בקבוצות קטנות לפי רמה וגיל, עם מורים דוברי אנגלית שפת אם.<br><br>במהלך השנה הילדים מתרגלים:<br><br>דיבור · קריאה · כתיבה · אוצר מילים · הגייה<br><br>השיעורים מתקיימים באנגלית, בדרך טבעית ואינטראקטיבית, עם הרבה מקום לדבר, להשתתף ולהשתמש בשפה.<br><br> כיתות א׳ עד י׳<br> קבוצות קטנות<br> <br><br> 265 ₪ לחודש בלבד <br><br>רוצים להגיע לשיעור ניסיון ולראות אם החוג מתאים לילד/ה שלכם?<br><br>לפרטים והרשמה:<br>TA@osgood.school<br>WhatsApp: 055-306-9333<br><br>נשמח לראות אתכם,<br>נוי</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">תגובה ל: רישום לפרויקט השאלת ספרים- שכבה א החדשה - תשפ"ז</span>
+          
+          <span class="msg-meta" dir="ltr">08/07/2026</span>
+        </div>
+        <div class="msg-meta">יערן יגאל (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">זו תזכורת לגבי רישום לפרויקט השאלת ספרים. ניתן לעשות זאת עד 14/7.</p>
+      </summary>
+      <p class="msg-body">שלום שוב לכל הורי א, <br>זו תזכורת לגבי רישום לפרויקט השאלת ספרים. ניתן לעשות זאת עד 14/7.<br><br>בברכה, <br>יגאל <br><br><br> <br>הודעה זו נשלחה בדואר-אלקטרוני<br>בתאריך:	05/07/2026 (18:55)<br>נושא:	רישום לפרויקט השאלת ספרים- שכבה א החדשה - תשפ"ז<br>מאת:	יערן יגאל<br>שלום לכל הורי שכבה א החדשה, <br>מי מכם המעוניין להירשם לפרויקט השאלת ספרים - יכול כבר לעשות זאת.<br>הרישום נעשה דרך אתר בית הספר: https://ramatavivg.tik-tak.net/<br>לשונית הורים ותלמידים- תשלומי הורים ומשם יהיה לכם קישור לתשלום ורישום.<br>שימו לב, הרישום לפרויקט ייעשה עד לתאריך 14/7.<br>לאחר מכן לא ניתן יהיה להצטרף לפרויקט בשנה זו מאחר ובית הספר מבצע את הרכישה בצורה מרוכזת.<br>המשך קיץ נעים,<br>יגאל יערן<br>מנהל בית הספר</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">תרגול מתמטיקה לחופשת הקיץ</span>
+          
+          <span class="msg-meta" dir="ltr">06/07/2026</span>
+        </div>
+        <div class="msg-meta">הוקסוורף ורד (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">מצרפת דפי תרגול לחופשת הקיץ שנשלחו לכל שכבת ה'. מאחלת לכולם חופשה מהנה ובטוחה.</p>
+      </summary>
+      <p class="msg-body">שלום הורים ותלמידים יקרים,<br><br>מצרפת דפי תרגול לחופשת הקיץ שנשלחו לכל שכבת ה'.<br><br>מאחלת לכולם חופשה מהנה ובטוחה.<br><br>בברכה<br>ורד הוקסוורף</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">רשימת ספרי לימוד וציוד- תשפ"ז (תיקון להודעה הקודמת)</span>
+          
+          <span class="msg-meta" dir="ltr">06/07/2026</span>
+        </div>
+        <div class="msg-meta">יערן יגאל (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">לכל ההורים, שימו לב, מצורפות רשימות הספרים והציוד המעודכנות. חל בהן תיקון ברשימה של ספרי מתמטיקה לעומת הקובץ הקודם שנשלח.</p>
+      </summary>
+      <p class="msg-body">לכל ההורים, <br><br>שימו לב, מצורפות רשימות הספרים והציוד המעודכנות. <br>חל בהן תיקון ברשימה של ספרי מתמטיקה לעומת הקובץ הקודם שנשלח. <br><br>בברכה, <br>יגאל</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">רישום לפרויקט השאלת ספרים- שכבה א החדשה - תשפ"ז</span>
+          
+          <span class="msg-meta" dir="ltr">05/07/2026</span>
+        </div>
+        <div class="msg-meta">יערן יגאל (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">מי מכם המעוניין להירשם לפרויקט השאלת ספרים - יכול כבר לעשות זאת. הרישום נעשה דרך אתר בית הספר: https://ramatavivg.tik-tak.net/ לשונית הורים ותלמידים- תשלומי הורים ומשם יהיה לכם קישור לתשלום ורישום. שימו לב, הרישום לפרויקט ייעשה עד לתאריך 14/7.</p>
+      </summary>
+      <p class="msg-body">שלום לכל הורי שכבה א החדשה, <br> <br>מי מכם המעוניין להירשם לפרויקט השאלת ספרים - יכול כבר לעשות זאת.<br> <br>הרישום נעשה דרך אתר בית הספר: https://ramatavivg.tik-tak.net/<br> <br>לשונית הורים ותלמידים- תשלומי הורים ומשם יהיה לכם קישור לתשלום ורישום.<br> <br>שימו לב, הרישום לפרויקט ייעשה עד לתאריך 14/7.<br> <br>לאחר מכן לא ניתן יהיה להצטרף לפרויקט בשנה זו מאחר ובית הספר מבצע את הרכישה בצורה מרוכזת.<br> <br>המשך קיץ נעים,<br>יגאל יערן<br>מנהל בית הספר</p>
+    </details>
+  
+    <details class="msg-item">
+      <summary>
+        <div class="msg-head">
+          <span class="msg-subject">רשימת ספרי לימוד וציוד נדרש לפי שכבות- תשפ"ז</span>
+          
+          <span class="msg-meta" dir="ltr">05/07/2026</span>
+        </div>
+        <div class="msg-meta">יערן יגאל (מורה) · איתן, עלמה</div>
+        <p class="msg-summary">מצ"ב רשימת הציוד והספרים הנדרשים לשנה הבאה. המשך קיץ נעים, יגאל</p>
+      </summary>
+      <p class="msg-body">שלום לכל הורי בית הספר,<br><br>מצ"ב רשימת הציוד והספרים הנדרשים לשנה הבאה. <br><br>המשך קיץ נעים, <br><br>יגאל</p>
+    </details>
+  
+    </section>
+  
+  </div>
+  <script>
+    document.querySelectorAll('table').forEach(function (table) {
+      var headRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
+      if (!headRow) return;
+      Array.from(headRow.cells).forEach(function (th, colIndex) {
+        th.classList.add('sortable');
+        th.addEventListener('click', function () {
+          var tbody = table.tBodies[0];
+          if (!tbody) return;
+          var rows = Array.from(tbody.rows);
+          var newDir = th.classList.contains('sort-asc') ? 'desc' : 'asc';
+          Array.from(headRow.cells).forEach(function (c) { c.classList.remove('sort-asc', 'sort-desc'); });
+          th.classList.add(newDir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+          function getValue(row) {
+            var cell = row.cells[colIndex];
+            if (!cell) return '';
+            if (cell.dataset.sort !== undefined) return cell.dataset.sort;
+            return cell.textContent.trim();
+          }
+
+          rows.sort(function (a, b) {
+            var va = getValue(a), vb = getValue(b);
+            var na = Number(va), nb = Number(vb);
+            var cmp;
+            if (va !== '' && vb !== '' && !isNaN(na) && !isNaN(nb)) {
+              cmp = na - nb;
+            } else {
+              cmp = va.localeCompare(vb, 'he');
+            }
+            return newDir === 'asc' ? cmp : -cmp;
+          });
+
+          rows.forEach(function (row) { tbody.appendChild(row); });
+        });
+      });
+    });
+
+    (function () {
+      var childSel = document.getElementById('filter-child');
+      var catSel = document.getElementById('filter-category');
+      var subcatSel = document.getElementById('filter-subcategory');
+      if (!childSel && !catSel && !subcatSel) return;
+
+      function applyFilters() {
+        var childVal = childSel ? childSel.value : '';
+        var catVal = catSel ? catSel.value : '';
+        var subcatVal = subcatSel ? subcatSel.value : '';
+        document.querySelectorAll('tbody tr[data-child]').forEach(function (row) {
+          var show = (!childVal || row.dataset.child === childVal) &&
+                     (!catVal || row.dataset.category === catVal) &&
+                     (!subcatVal || row.dataset.subcategory === subcatVal);
+          row.style.display = show ? '' : 'none';
+        });
+      }
+
+      [childSel, catSel, subcatSel].forEach(function (sel) {
+        if (sel) sel.addEventListener('change', applyFilters);
+      });
+    })();
+  </script>
+</body>
+</html>

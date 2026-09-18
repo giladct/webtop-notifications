@@ -1,0 +1,5 @@
+.env
+session.json
+node_modules/
+notifications-latest-*.json
+notifications-summary.txt

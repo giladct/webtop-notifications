@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>כל ההתראות ב-14 יום האחרונים — Webtop</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1c1e21;
+    --sub-text: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2f6fed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --card-bg: #1f2227;
+      --text: #eaecef;
+      --sub-text: #9aa0a8;
+      --border: #2c2f36;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px 16px 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  nav.pagenav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .nav-link {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--sub-text);
+    text-decoration: none;
+    background: var(--card-bg);
+  }
+  .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+  header { margin-bottom: 20px; text-align: center; }
+  header h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { color: var(--sub-text); margin: 0; font-size: 14px; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 19px; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .sub { color: var(--sub-text); margin: 0 0 14px; font-size: 14px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .pill {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    white-space: nowrap;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+  th { color: var(--sub-text); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--text); }
+  th.sortable::after { content: ''; display: inline-block; width: 0.6em; opacity: 0.4; }
+  th.sort-asc::after { content: '▲'; opacity: 1; font-size: 9px; }
+  th.sort-desc::after { content: '▼'; opacity: 1; font-size: 9px; }
+  .date-cell { white-space: normal; word-break: break-word; color: var(--sub-text); font-size: 13px; max-width: 80px; }
+  .child-cell { white-space: nowrap; font-weight: 600; width: 1%; }
+  .cat-cell { max-width: 90px; }
+  .subject-cell { max-width: 90px; color: var(--sub-text); font-size: 13px; }
+  .cat-badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  @media (max-width: 640px) {
+    .cat-cell { max-width: 64px; }
+    .subject-cell { max-width: 64px; }
+    .date-cell { max-width: 60px; }
+    table { font-size: 13px; }
+    th, td { padding: 6px; }
+  }
+  .empty { color: var(--sub-text); font-size: 14px; }
+  ul.insights { margin: 0; padding-inline-start: 20px; font-size: 14px; line-height: 1.7; }
+  ul.insights li { margin-bottom: 4px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .filters select {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+  }
+  .msg-item { border-bottom: 1px solid var(--border); padding: 14px 0; }
+  .msg-item:last-child { border-bottom: none; }
+  .msg-item.needs-attention { border-inline-start: 3px solid #d64545; padding-inline-start: 11px; margin-inline-start: -14px; }
+  .attn-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, #d64545 15%, transparent);
+    color: #d64545;
+    white-space: nowrap;
+  }
+  .msg-item > summary { cursor: pointer; list-style: none; }
+  .msg-item > summary::-webkit-details-marker { display: none; }
+  .msg-item > summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-inline-end: 6px;
+    color: var(--sub-text);
+    transition: transform .15s;
+  }
+  .msg-item[open] > summary::before { transform: rotate(90deg); }
+  .msg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .msg-subject { font-weight: 600; font-size: 15px; }
+  .msg-meta { color: var(--sub-text); font-size: 13px; }
+  .msg-summary { font-size: 14px; margin: 4px 0 0; }
+  .msg-body {
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 10px 0 0;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="pagenav">
+    <a class="nav-link active" href="notifications-14days.html">כל ההתראות (14 יום)</a>
+  
+    <a class="nav-link" href="messages-inbox.html">הודעות נכנסות</a>
+  </nav>
+    <header>
+      <h1>כל ההתראות ב-14 יום האחרונים</h1>
+      <p>Generated 18/09/2026, 19:18:24</p>
+    </header>
+    
+    
+    <section class="card">
+      <h3>תובנות סטטיסטיות</h3>
+      <ul class="insights">
+        <li>לאיתן יש הכי הרבה אירועי משמעת/הפרעות ב-14 הימים האחרונים (12), לעומת עלמה (5), אלה (1).</li><li>אצל איתן, שיעור מדע וטכנולוגיה בולט עם הכי הרבה אירועים לתשומת לב (6 מתוך 12).</li><li>אצל איתן, "ציוד" חוזר על עצמו 4 פעמים ב-14 הימים האחרונים.</li><li>אצל עלמה, שיעור מדע וטכנולוגיה בולט עם הכי הרבה אירועים לתשומת לב (3 מתוך 5).</li>
+      </ul>
+    </section>
+  
+    <section class="card">
+      <p class="sub" dir="ltr">58 notifications across all children in the last 14 days</p>
+      
+    <div class="filters">
+      <select id="filter-child"><option value="">כל הילדים</option><option value="אלה">אלה</option><option value="איתן">איתן</option><option value="עלמה">עלמה</option></select>
+      <select id="filter-category"><option value="">כל הקטגוריות</option><option value="נושאי שיעור ושיעורי-בית">נושאי שיעור ושיעורי-בית</option><option value="אירועי שיעור">אירועי שיעור</option><option value="ציונים שוטפים">ציונים שוטפים</option></select>
+      <select id="filter-subcategory"><option value="">כל תתי-הקטגוריות</option><option value="עדכון שיעורי בית">עדכון שיעורי בית</option><option value="הפרעה">הפרעה</option><option value="מילה טובה">מילה טובה</option><option value="ציוד">ציוד</option><option value="אחר">אחר</option><option value="אי הכנת שיעורי בית">אי הכנת שיעורי בית</option><option value="ציון">ציון</option><option value="איחור">איחור</option><option value="חיסור">חיסור</option></select>
+    </div>
+  
+      
+      <table>
+        <thead><tr><th>Date</th><th>Child</th><th>Category</th><th>Subcategory</th><th>Subject</th><th>Notification</th></tr></thead>
+        <tbody>
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789716180000">יום שישי, 18/09/2026 (10:23)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "אין ש''ב.<br>בכיתה עשינו עמ' 10 וכתבנו תרשים שינויי מצבי הצבירה" בשיעור מדע וטכנולוגיה בתאריך 16/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789640040000">יום חמישי, 17/09/2026 (13:14)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "אין" בשיעור אנגלית בתאריך 17/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="הפרעה">
+      <td class="date-cell" data-sort="1789638960000">יום חמישי, 17/09/2026 (12:56)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">הפרעה</span></td>
+      <td class="subject-cell">שעת חינוך- מפתח הלב</td>
+      <td>איתן, נרשם לך הפרעה בשעת חינוך- מפתח הלב בתאריך 17/09/2026 בשיעור 6</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789633080000">יום חמישי, 17/09/2026 (11:18)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">לשון והבעה</td>
+      <td>אלה, עודכנו עבורך שיעורי-בית "אין. חופשה נעימה!" בשיעור לשון והבעה בתאריך 17/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="אירועי שיעור" data-subcategory="מילה טובה">
+      <td class="date-cell" data-sort="1789633020000">יום חמישי, 17/09/2026 (11:17)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">מילה טובה</span></td>
+      <td class="subject-cell">לשון והבעה</td>
+      <td>אלה, נרשם לך מילה טובה בלשון והבעה בתאריך 17/09/2026 בשיעור 1</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789631580000">יום חמישי, 17/09/2026 (10:53)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">שפה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "רעננו את החוקים על כתיבת ביוגרפיה.<br>הדגמנו את כתיבת הביוגרפיה עליי.<br>ש.ב בשפה בצילום המצ״ב." בשיעור שפה בתאריך 17/09/2026 בשיעור 3</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789547640000">יום רביעי, 16/09/2026 (11:34)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">שפה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "מצ״ב צילום לוח." בשיעור שפה בתאריך 16/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789538220000">יום רביעי, 16/09/2026 (08:57)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "שימו לב לא מעט תלמידים לא הכינו, שוב." בשיעור אנגלית בתאריך 16/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="אירועי שיעור" data-subcategory="מילה טובה">
+      <td class="date-cell" data-sort="1789475400000">יום שלישי, 15/09/2026 (15:30)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">מילה טובה</span></td>
+      <td class="subject-cell">לשון והבעה</td>
+      <td>אלה, נרשם לך מילה טובה בלשון והבעה בתאריך 15/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789466160000">יום שלישי, 15/09/2026 (12:56)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">לשון והבעה</td>
+      <td>אלה, עודכנו עבורך שיעורי-בית "לסיים את תרגול צירופים שמניים ב'" בשיעור לשון והבעה בתאריך 15/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789459020000">יום שלישי, 15/09/2026 (10:57)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מתמטיקה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "לסיים עד עמוד 42" בשיעור מתמטיקה בתאריך 15/09/2026 בשיעור 3</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="הפרעה">
+      <td class="date-cell" data-sort="1789458780000">יום שלישי, 15/09/2026 (10:53)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">הפרעה</span></td>
+      <td class="subject-cell">מתמטיקה</td>
+      <td>איתן, נרשם לך הפרעה במתמטיקה בתאריך 15/09/2026 בשיעור 3</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="ציוד">
+      <td class="date-cell" data-sort="1789452480000">יום שלישי, 15/09/2026 (09:08)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">ציוד</span></td>
+      <td class="subject-cell">תנ``ך</td>
+      <td>איתן, נרשם לך אי הבאת ציוד בתנ``ך בתאריך 15/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789449960000">יום שלישי, 15/09/2026 (08:26)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">תיאטרון</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "יצירה אישית נושא:  סצנה מבססת סיפור אמיתי  של אחד המשתתפים בחירת סגנון תיאטרוני לסצנה " בשיעור תיאטרון בתאריך 15/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789392000000">יום שני, 14/09/2026 (16:20)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "אין" בשיעור אנגלית בתאריך 14/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789388760000">יום שני, 14/09/2026 (15:26)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "אין ש``ב.<br>תלמידים שצריכים להשלים:<br>בכיתה עשינו עמ` 7." בשיעור מדע וטכנולוגיה בתאריך 14/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="אחר">
+      <td class="date-cell" data-sort="1789388580000">יום שני, 14/09/2026 (15:23)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">אחר</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, נרשם לך אחר במדע וטכנולוגיה בתאריך 14/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="ציוד">
+      <td class="date-cell" data-sort="1789388580000">יום שני, 14/09/2026 (15:23)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">ציוד</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, נרשם לך אי הבאת ציוד במדע וטכנולוגיה בתאריך 14/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789388400000">יום שני, 14/09/2026 (15:20)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "ש``ב ליום ד`:<br>1. לקרוא עמ` 223-225.<br>2. לענות על כל שאלות (סה``ך 4) מעמ` 224 במחברת." בשיעור מדע וטכנולוגיה בתאריך 14/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789388400000">יום שני, 14/09/2026 (15:20)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "ש``ב ליום ד`:<br>1. לקרוא עמ` 223-225.<br>2. לענות על כל שאלות (סה``ך 4) מעמ` 224 במחברת." בשיעור מדע וטכנולוגיה בתאריך 14/09/2026 בשיעור 6</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789374660000">יום שני, 14/09/2026 (11:31)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">שפה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "מכייון ששיעורים הקודמים התפספסו.. קראנו בשיעור זה את עמוד 15 בספר, פתרנו את שאלות בעמוד 16 על מחברת אוצר מילים. <br>ש.באנגלית:<br>בספר עמוד 17 לפתור את 2 התרגילים + לקרוא את הקטע הקצר שבפינת ה grammar<br>חוברת עבודה עמודים 10-11-12" בשיעור שפה בתאריך 14/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789374480000">יום שני, 14/09/2026 (11:28)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">שפה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "המרה לשיעור אנגלית" בשיעור שפה בתאריך 14/09/2026 בשיעור 3</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="הפרעה">
+      <td class="date-cell" data-sort="1789366800000">יום שני, 14/09/2026 (09:20)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">הפרעה</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>איתן, נרשם לך הפרעה באנגלית בתאריך 14/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789366800000">יום שני, 14/09/2026 (09:20)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "מצ״ב צילום של מה שעשינו בעבודה הכיתתית." בשיעור אנגלית בתאריך 14/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="ציוד">
+      <td class="date-cell" data-sort="1789046640000">יום חמישי, 10/09/2026 (16:24)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">ציוד</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, נרשם לך אי הבאת ציוד במדע וטכנולוגיה בתאריך 10/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="אחר">
+      <td class="date-cell" data-sort="1789046220000">יום חמישי, 10/09/2026 (16:17)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">אחר</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, נרשם לך אחר במדע וטכנולוגיה בתאריך 10/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1789045920000">יום חמישי, 10/09/2026 (16:12)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "1. אין ש''ב לחופשה <br>2. מקווה לראות שיפור התנהגות כיתתי לאחר חופש. אני רגיל לו2 מצויינים ולא מוכן לפחות. שנה טובה!" בשיעור מדע וטכנולוגיה בתאריך 10/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="אירועי שיעור" data-subcategory="הפרעה">
+      <td class="date-cell" data-sort="1788963900000">יום רביעי, 09/09/2026 (17:25)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">הפרעה</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>עלמה, נרשם לך הפרעה במדע וטכנולוגיה בתאריך 09/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788963240000">יום רביעי, 09/09/2026 (17:14)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "אין ש``ב לחופש.<br>בכיתה עשינו (להשלים מי שהגיע ללא חוברת):<br>- קראנו עמ` 12-13<br>- גזרנו והדבקנו בעמ` 6.<br>-בבקשה לא לעשות עמודים שאני לא מציין - נעשה אותם כשיגיע עליהם זמן." בשיעור מדע וטכנולוגיה בתאריך 09/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="אירועי שיעור" data-subcategory="הפרעה">
+      <td class="date-cell" data-sort="1788962400000">יום רביעי, 09/09/2026 (17:00)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">הפרעה</span></td>
+      <td class="subject-cell">מוזיקה</td>
+      <td>עלמה, נרשם לך הפרעה במוזיקה בתאריך 09/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788961860000">יום רביעי, 09/09/2026 (16:51)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מוזיקה</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "אין." בשיעור מוזיקה בתאריך 09/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="אי הכנת שיעורי בית">
+      <td class="date-cell" data-sort="1788942120000">יום רביעי, 09/09/2026 (11:22)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">אי הכנת שיעורי בית</span></td>
+      <td class="subject-cell">שפה</td>
+      <td>איתן, נרשם לך אי הכנת ש.ב בשפה בתאריך 09/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788942120000">יום רביעי, 09/09/2026 (11:22)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">שפה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "בדיקת שיעורי בית - מיפוי קורות חיים של אישיותו של חיים וייצמן עמוד 17 בספר. " בשיעור שפה בתאריך 09/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="ציונים שוטפים" data-subcategory="ציון">
+      <td class="date-cell" data-sort="1788937140000">יום רביעי, 09/09/2026 (09:59)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#2f6fed">ציונים שוטפים</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#2f6fed">ציון</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>אלה, נרשם לך ציון בsummer assignment (מבחן בכתב) באנגלית בתאריך 06/09/2026</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="ציונים שוטפים" data-subcategory="ציון">
+      <td class="date-cell" data-sort="1788933840000">יום רביעי, 09/09/2026 (09:04)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#2f6fed">ציונים שוטפים</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#2f6fed">ציון</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>אלה, נרשם לך ציון בon going assisgnment (מבחן בכתב) באנגלית בתאריך 09/09/2026</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788932940000">יום רביעי, 09/09/2026 (08:49)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "עבודת כיתה - עמוד 13 מהספר לפתור על מחברת אוצר מילים." בשיעור אנגלית בתאריך 09/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788931320000">יום רביעי, 09/09/2026 (08:22)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "בדיקה ותיקון של שיעורי בית" בשיעור אנגלית בתאריך 09/09/2026 בשיעור 1</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788865920000">יום שלישי, 08/09/2026 (14:12)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">תיאטרון</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "שיעור ראשון לסימסטר . סיכום שנה שעברה. כללי השיעור. דגשים להתנהגות בשיעור ופרמטרים להערכה  הליכות בחלל. עבודה בקבוצות  על סצנות כבסיס ליצירה אישית ." בשיעור תיאטרון בתאריך 08/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="אירועי שיעור" data-subcategory="הפרעה">
+      <td class="date-cell" data-sort="1788864840000">יום שלישי, 08/09/2026 (13:54)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">הפרעה</span></td>
+      <td class="subject-cell">מתמטיקה א'</td>
+      <td>אלה, נרשם לך הפרעות במתמטיקה א' בתאריך 08/09/2026 בשיעור 6</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788860940000">יום שלישי, 08/09/2026 (12:49)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">לשון והבעה</td>
+      <td>אלה, עודכנו עבורך שיעורי-בית "לסיים את תרגול ג'" בשיעור לשון והבעה בתאריך 08/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="אירועי שיעור" data-subcategory="איחור">
+      <td class="date-cell" data-sort="1788847980000">יום שלישי, 08/09/2026 (09:13)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">איחור</span></td>
+      <td class="subject-cell">כישורי חיים</td>
+      <td>עלמה, נרשם לך איחור בכישורי חיים בתאריך 08/09/2026 בשיעור 1</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788846120000">יום שלישי, 08/09/2026 (08:42)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">היסטוריה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "הכנת שער למחברת ובחירת נושאים מעניינים תוך עלעול בחוברת ובתוכן העניינים" בשיעור היסטוריה בתאריך 08/09/2026 בשיעור 1</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="אחר">
+      <td class="date-cell" data-sort="1788803880000">יום שני, 07/09/2026 (20:58)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">אחר</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, נרשם לך אחר במדע וטכנולוגיה בתאריך 07/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="ציוד">
+      <td class="date-cell" data-sort="1788803880000">יום שני, 07/09/2026 (20:58)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">ציוד</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, נרשם לך אי הבאת ציוד במדע וטכנולוגיה בתאריך 07/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788792420000">יום שני, 07/09/2026 (17:47)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "כל העמודים מיחסים כעט לסםר מדעים כיתה ה' (לא ו').<br>בכל פעם נשלחים לווטסאפ הילדים עמודים הרלוונטיים.<br>ש''ב ליום ד':<br>1. להעתיק ולא למלא טבלה מעמ' 230. (לרוחב, בגדול, עם סרגל). <br>2. לקשט ולצבוע דף שער שקיבלו בכיתה (רשות)" בשיעור מדע וטכנולוגיה בתאריך 07/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788792420000">יום שני, 07/09/2026 (17:47)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "כל העמודים מיחסים כעט לסםר מדעים כיתה ה' (לא ו').<br>בכל פעם נשלחים לווטסאפ הילדים עמודים הרלוונטיים.<br>ש''ב ליום ד':<br>1. להעתיק ולא למלא טבלה מעמ' 230. (לרוחב, בגדול, עם סרגל). <br>2. לקשט ולצבוע דף שער שקיבלו בכיתה (רשות)" בשיעור מדע וטכנולוגיה בתאריך 07/09/2026 בשיעור 6</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="אירועי שיעור" data-subcategory="אחר">
+      <td class="date-cell" data-sort="1788792120000">יום שני, 07/09/2026 (17:42)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">אחר</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>עלמה, נרשם לך אחר במדע וטכנולוגיה בתאריך 07/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="אירועי שיעור" data-subcategory="ציוד">
+      <td class="date-cell" data-sort="1788792120000">יום שני, 07/09/2026 (17:42)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">ציוד</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>עלמה, נרשם לך אי הבאת ציוד במדע וטכנולוגיה בתאריך 07/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788790620000">יום שני, 07/09/2026 (17:17)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מדע וטכנולוגיה</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "ליום ד' אין ש''ב.<br>בבקשה להביא מספריים ודבק סטיק.<br>____<br>בכיתה השלמנו ובדקנו עמ' 8-9." בשיעור מדע וטכנולוגיה בתאריך 07/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788777480000">יום שני, 07/09/2026 (13:38)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מתמטיקה</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "מי שלא סיים עד עמוד 13, לסיים עד השיער הבא" בשיעור מתמטיקה בתאריך 07/09/2026 בשיעור 3</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788777480000">יום שני, 07/09/2026 (13:38)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מתמטיקה</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "מי שלא סיים עד עמוד 13, לסיים עד השיער הבא" בשיעור מתמטיקה בתאריך 07/09/2026 בשיעור 5</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788777480000">יום שני, 07/09/2026 (13:38)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">מתמטיקה</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "מי שלא סיים עד עמוד 13, לסיים עד השיער הבא" בשיעור מתמטיקה בתאריך 07/09/2026 בשיעור 6</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788772980000">יום שני, 07/09/2026 (12:23)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">שפה</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "ש.ב להבין מהי ביוגרפיה? ולהכין את הטבלה שבספר על חיים וייצמן. מי שלא הכין את המטלה מאתמול בבקשה שישלים. " בשיעור שפה בתאריך 07/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="אלה" data-category="אירועי שיעור" data-subcategory="מילה טובה">
+      <td class="date-cell" data-sort="1788771000000">יום שני, 07/09/2026 (11:50)</td>
+      <td class="child-cell">אלה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">מילה טובה</span></td>
+      <td class="subject-cell">אזרחות</td>
+      <td>אלה, נרשם לך מילה טובה באזרחות בתאריך 07/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788766800000">יום שני, 07/09/2026 (10:40)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>עלמה, עודכנו עבורך שיעורי-בית "אין" בשיעור אנגלית בתאריך 07/09/2026 בשיעור 4</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="אירועי שיעור" data-subcategory="אי הכנת שיעורי בית">
+      <td class="date-cell" data-sort="1788766680000">יום שני, 07/09/2026 (10:38)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">אי הכנת שיעורי בית</span></td>
+      <td class="subject-cell">שפה</td>
+      <td>איתן, נרשם לך אי הכנת ש.ב בשפה בתאריך 07/09/2026 בשיעור 3</td>
+    </tr>
+  
+    <tr data-child="איתן" data-category="נושאי שיעור ושיעורי-בית" data-subcategory="עדכון שיעורי בית">
+      <td class="date-cell" data-sort="1788760440000">יום שני, 07/09/2026 (08:54)</td>
+      <td class="child-cell">איתן</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#3fa15e">נושאי שיעור ושיעורי-בית</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#7a7f8a">עדכון שיעורי בית</span></td>
+      <td class="subject-cell">אנגלית</td>
+      <td>איתן, עודכנו עבורך שיעורי-בית "תיקון תרגילים 7-8 בספר בעמוד 10. התחלנו את הפרק הראשון בספר. שוחחנו מה מיוחד ביפן. תרגלנו שיח, חזרנו על הוראות. <br>שיעורי בית/ עבודת כיתה בחוברת עבודה עמודים 5-8. " בשיעור אנגלית בתאריך 07/09/2026 בשיעור 2</td>
+    </tr>
+  
+    <tr data-child="עלמה" data-category="אירועי שיעור" data-subcategory="חיסור">
+      <td class="date-cell" data-sort="1788674580000">יום ראשון, 06/09/2026 (09:03)</td>
+      <td class="child-cell">עלמה</td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#e0913f">אירועי שיעור</span></td>
+      <td class="cat-cell"><span class="cat-badge" style="--c:#d64545">חיסור</span></td>
+      <td class="subject-cell">שעת חינוך- מפתח הלב</td>
+      <td>עלמה, נרשם לך חיסור בשעת חינוך- מפתח הלב בתאריך 06/09/2026 בשיעור 2</td>
+    </tr>
+  </tbody>
+      </table>
+    </section>
+  
+  </div>
+  <script>
+    document.querySelectorAll('table').forEach(function (table) {
+      var headRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
+      if (!headRow) return;
+      Array.from(headRow.cells).forEach(function (th, colIndex) {
+        th.classList.add('sortable');
+        th.addEventListener('click', function () {
+          var tbody = table.tBodies[0];
+          if (!tbody) return;
+          var rows = Array.from(tbody.rows);
+          var newDir = th.classList.contains('sort-asc') ? 'desc' : 'asc';
+          Array.from(headRow.cells).forEach(function (c) { c.classList.remove('sort-asc', 'sort-desc'); });
+          th.classList.add(newDir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+          function getValue(row) {
+            var cell = row.cells[colIndex];
+            if (!cell) return '';
+            if (cell.dataset.sort !== undefined) return cell.dataset.sort;
+            return cell.textContent.trim();
+          }
+
+          rows.sort(function (a, b) {
+            var va = getValue(a), vb = getValue(b);
+            var na = Number(va), nb = Number(vb);
+            var cmp;
+            if (va !== '' && vb !== '' && !isNaN(na) && !isNaN(nb)) {
+              cmp = na - nb;
+            } else {
+              cmp = va.localeCompare(vb, 'he');
+            }
+            return newDir === 'asc' ? cmp : -cmp;
+          });
+
+          rows.forEach(function (row) { tbody.appendChild(row); });
+        });
+      });
+    });
+
+    (function () {
+      var childSel = document.getElementById('filter-child');
+      var catSel = document.getElementById('filter-category');
+      var subcatSel = document.getElementById('filter-subcategory');
+      if (!childSel && !catSel && !subcatSel) return;
+
+      function applyFilters() {
+        var childVal = childSel ? childSel.value : '';
+        var catVal = catSel ? catSel.value : '';
+        var subcatVal = subcatSel ? subcatSel.value : '';
+        document.querySelectorAll('tbody tr[data-child]').forEach(function (row) {
+          var show = (!childVal || row.dataset.child === childVal) &&
+                     (!catVal || row.dataset.category === catVal) &&
+                     (!subcatVal || row.dataset.subcategory === subcatVal);
+          row.style.display = show ? '' : 'none';
+        });
+      }
+
+      [childSel, catSel, subcatSel].forEach(function (sel) {
+        if (sel) sel.addEventListener('change', applyFilters);
+      });
+    })();
+  </script>
+</body>
+</html>
