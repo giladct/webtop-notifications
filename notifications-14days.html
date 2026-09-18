@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>כל ההתראות ב-14 יום האחרונים — Webtop</title>
+<title class="i18n-el" data-he="כל ההתראות ב-14 יום האחרונים — Webtop" data-en="All Notifications (14 days) — Webtop">כל ההתראות ב-14 יום האחרונים — Webtop</title>
 <style>
   :root {
     --bg: #f5f6f8;
@@ -49,6 +49,7 @@
   }
   .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
   .nav-link.secondary { opacity: 0.65; font-size: 12px; }
+  .lang-toggle { font-weight: 700; cursor: pointer; }
   header { margin-bottom: 20px; text-align: center; }
   header h1 { font-size: 22px; margin: 0 0 4px; }
   header p { color: var(--sub-text); margin: 0; font-size: 14px; }
@@ -265,22 +266,22 @@
 <body>
   <div class="wrap">
     <nav class="pagenav">
-    <a class="nav-link" href="index.html">🎒 School HQ</a>
+    <a class="nav-link" href="index.html"><span class="i18n" data-he="🎒 School HQ" data-en="🎒 School HQ">🎒 School HQ</span></a>
   
-    <a class="nav-link" href="digest.html">✨ סיכום היום</a>
+    <a class="nav-link" href="digest.html"><span class="i18n" data-he="✨ סיכום היום" data-en="✨ Today's Digest">✨ סיכום היום</span></a>
   
-    <a class="nav-link secondary active" href="notifications-14days.html">כל ההתראות</a>
+    <a class="nav-link secondary active" href="notifications-14days.html"><span class="i18n" data-he="כל ההתראות" data-en="All Notifications">כל ההתראות</span></a>
   
-    <a class="nav-link secondary" href="messages-inbox.html">הודעות נכנסות</a>
-  </nav>
+    <a class="nav-link secondary" href="messages-inbox.html"><span class="i18n" data-he="הודעות נכנסות" data-en="Inbox">הודעות נכנסות</span></a>
+  <button id="lang-toggle" class="nav-link lang-toggle" type="button">EN</button></nav>
     <header>
-      <h1>כל ההתראות ב-14 יום האחרונים</h1>
-      <p>Generated 18/09/2026, 22:03:05</p>
+      <h1 class="i18n-el" data-he="כל ההתראות ב-14 יום האחרונים" data-en="All Notifications (14 days)">כל ההתראות ב-14 יום האחרונים</h1>
+      <p>Generated 18/09/2026, 23:01:44</p>
     </header>
     
     
     <section class="card">
-      <h3>תובנות סטטיסטיות</h3>
+      <h3><span class="i18n" data-he="תובנות סטטיסטיות" data-en="Statistical Insights">תובנות סטטיסטיות</span></h3>
       <ul class="insights">
         <li>לאיתן יש הכי הרבה אירועי משמעת/הפרעות ב-14 הימים האחרונים (12), לעומת עלמה (5), אלה (1).</li><li>אצל איתן, שיעור מדע וטכנולוגיה בולט עם הכי הרבה אירועים לתשומת לב (6 מתוך 12).</li><li>אצל איתן, "ציוד" חוזר על עצמו 4 פעמים ב-14 הימים האחרונים.</li><li>אצל עלמה, שיעור מדע וטכנולוגיה בולט עם הכי הרבה אירועים לתשומת לב (3 מתוך 5).</li>
       </ul>
@@ -290,9 +291,9 @@
       <p class="sub" dir="ltr">58 notifications across all children in the last 14 days</p>
       
     <div class="filters">
-      <select id="filter-child"><option value="">כל הילדים</option><option value="אלה">אלה</option><option value="איתן">איתן</option><option value="עלמה">עלמה</option></select>
-      <select id="filter-category"><option value="">כל הקטגוריות</option><option value="נושאי שיעור ושיעורי-בית">נושאי שיעור ושיעורי-בית</option><option value="אירועי שיעור">אירועי שיעור</option><option value="ציונים שוטפים">ציונים שוטפים</option></select>
-      <select id="filter-subcategory"><option value="">כל תתי-הקטגוריות</option><option value="עדכון שיעורי בית">עדכון שיעורי בית</option><option value="הפרעה">הפרעה</option><option value="מילה טובה">מילה טובה</option><option value="ציוד">ציוד</option><option value="אחר">אחר</option><option value="אי הכנת שיעורי בית">אי הכנת שיעורי בית</option><option value="ציון">ציון</option><option value="איחור">איחור</option><option value="חיסור">חיסור</option></select>
+      <select id="filter-child"><option class="i18n-el" data-he="כל הילדים" data-en="All children" value="">כל הילדים</option><option value="אלה">אלה</option><option value="איתן">איתן</option><option value="עלמה">עלמה</option></select>
+      <select id="filter-category"><option class="i18n-el" data-he="כל הקטגוריות" data-en="All categories" value="">כל הקטגוריות</option><option value="נושאי שיעור ושיעורי-בית">נושאי שיעור ושיעורי-בית</option><option value="אירועי שיעור">אירועי שיעור</option><option value="ציונים שוטפים">ציונים שוטפים</option></select>
+      <select id="filter-subcategory"><option class="i18n-el" data-he="כל תתי-הקטגוריות" data-en="All topics" value="">כל תתי-הקטגוריות</option><option value="עדכון שיעורי בית">עדכון שיעורי בית</option><option value="הפרעה">הפרעה</option><option value="מילה טובה">מילה טובה</option><option value="ציוד">ציוד</option><option value="אחר">אחר</option><option value="אי הכנת שיעורי בית">אי הכנת שיעורי בית</option><option value="ציון">ציון</option><option value="איחור">איחור</option><option value="חיסור">חיסור</option></select>
     </div>
   
       
@@ -770,6 +771,29 @@
   
   </div>
   <script>
+    var currentLang = 'he';
+    function applyLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.i18n, .i18n-el').forEach(function (el) {
+        var text = lang === 'en' ? el.dataset.en : el.dataset.he;
+        if (text != null) {
+          if (el.tagName === 'TITLE') { document.title = text; }
+          else { el.textContent = text; }
+        }
+      });
+      document.documentElement.dir = 'rtl';
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.textContent = lang === 'en' ? 'עברית' : 'EN';
+      try { localStorage.setItem('webtop-lang', lang); } catch (e) {}
+    }
+    (function () {
+      var saved = 'he';
+      try { saved = localStorage.getItem('webtop-lang') || 'he'; } catch (e) {}
+      applyLang(saved);
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.addEventListener('click', function () { applyLang(currentLang === 'en' ? 'he' : 'en'); });
+    })();
+
     document.querySelectorAll('table').forEach(function (table) {
       var headRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
       if (!headRow) return;
@@ -833,16 +857,21 @@
     (function () {
       var btn = document.getElementById('gen-digest-btn');
       if (!btn) return;
+      var GENERATING = { he: 'מייצר סיכום… (עד דקה)', en: 'Generating… (up to a minute)' };
+      var LOCAL_ONLY = { he: 'זמין רק כשמריצים node server.js מקומית', en: 'Only available when running node server.js locally' };
       btn.addEventListener('click', function () {
         btn.disabled = true;
-        var original = btn.textContent;
-        btn.textContent = 'מייצר סיכום… (עד דקה)';
+        var originalHe = btn.dataset.he, originalEn = btn.dataset.en;
+        btn.textContent = GENERATING[currentLang];
         fetch('/api/generate-digest', { method: 'POST' })
           .then(function (res) { if (!res.ok) throw new Error('failed'); return res.json(); })
           .then(function () { window.location.href = 'digest.html'; })
           .catch(function () {
-            btn.textContent = 'זמין רק כשמריצים node server.js מקומית';
-            setTimeout(function () { btn.textContent = original; btn.disabled = false; }, 3000);
+            btn.textContent = LOCAL_ONLY[currentLang];
+            setTimeout(function () {
+              btn.textContent = currentLang === 'en' ? originalEn : originalHe;
+              btn.disabled = false;
+            }, 3000);
           });
       });
     })();

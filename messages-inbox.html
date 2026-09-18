@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>הודעות נכנסות — Webtop</title>
+<title class="i18n-el" data-he="הודעות נכנסות — Webtop" data-en="Inbox — Webtop">הודעות נכנסות — Webtop</title>
 <style>
   :root {
     --bg: #f5f6f8;
@@ -49,6 +49,7 @@
   }
   .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
   .nav-link.secondary { opacity: 0.65; font-size: 12px; }
+  .lang-toggle { font-weight: 700; cursor: pointer; }
   header { margin-bottom: 20px; text-align: center; }
   header h1 { font-size: 22px; margin: 0 0 4px; }
   header p { color: var(--sub-text); margin: 0; font-size: 14px; }
@@ -265,17 +266,17 @@
 <body>
   <div class="wrap">
     <nav class="pagenav">
-    <a class="nav-link" href="index.html">🎒 School HQ</a>
+    <a class="nav-link" href="index.html"><span class="i18n" data-he="🎒 School HQ" data-en="🎒 School HQ">🎒 School HQ</span></a>
   
-    <a class="nav-link" href="digest.html">✨ סיכום היום</a>
+    <a class="nav-link" href="digest.html"><span class="i18n" data-he="✨ סיכום היום" data-en="✨ Today's Digest">✨ סיכום היום</span></a>
   
-    <a class="nav-link secondary" href="notifications-14days.html">כל ההתראות</a>
+    <a class="nav-link secondary" href="notifications-14days.html"><span class="i18n" data-he="כל ההתראות" data-en="All Notifications">כל ההתראות</span></a>
   
-    <a class="nav-link secondary active" href="messages-inbox.html">הודעות נכנסות</a>
-  </nav>
+    <a class="nav-link secondary active" href="messages-inbox.html"><span class="i18n" data-he="הודעות נכנסות" data-en="Inbox">הודעות נכנסות</span></a>
+  <button id="lang-toggle" class="nav-link lang-toggle" type="button">EN</button></nav>
     <header>
-      <h1>הודעות נכנסות</h1>
-      <p>Generated 18/09/2026, 22:03:05</p>
+      <h1 class="i18n-el" data-he="הודעות נכנסות" data-en="Inbox">הודעות נכנסות</h1>
+      <p>Generated 18/09/2026, 23:01:44</p>
     </header>
     
     <section class="card">
@@ -337,7 +338,7 @@
       <summary>
         <div class="msg-head">
           <span class="msg-subject">אישור יציאה כללי וגורף לכל הפעילויות</span>
-          <span class="attn-badge">דורש תשומת לב — דורש חתימה/אישור מכם</span>
+          <span class="attn-badge"><span class="i18n" data-he="דורש תשומת לב" data-en="Needs attention">דורש תשומת לב</span> — <span class="i18n" data-he="דורש חתימה/אישור מכם" data-en="Needs your signature/approval">דורש חתימה/אישור מכם</span></span>
           <span class="msg-meta" dir="ltr">06/09/2026</span>
         </div>
         <div class="msg-meta">דרעי עדי (מורה) · איתן, עלמה</div>
@@ -545,6 +546,29 @@
   
   </div>
   <script>
+    var currentLang = 'he';
+    function applyLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.i18n, .i18n-el').forEach(function (el) {
+        var text = lang === 'en' ? el.dataset.en : el.dataset.he;
+        if (text != null) {
+          if (el.tagName === 'TITLE') { document.title = text; }
+          else { el.textContent = text; }
+        }
+      });
+      document.documentElement.dir = 'rtl';
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.textContent = lang === 'en' ? 'עברית' : 'EN';
+      try { localStorage.setItem('webtop-lang', lang); } catch (e) {}
+    }
+    (function () {
+      var saved = 'he';
+      try { saved = localStorage.getItem('webtop-lang') || 'he'; } catch (e) {}
+      applyLang(saved);
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.addEventListener('click', function () { applyLang(currentLang === 'en' ? 'he' : 'en'); });
+    })();
+
     document.querySelectorAll('table').forEach(function (table) {
       var headRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
       if (!headRow) return;
@@ -608,16 +632,21 @@
     (function () {
       var btn = document.getElementById('gen-digest-btn');
       if (!btn) return;
+      var GENERATING = { he: 'מייצר סיכום… (עד דקה)', en: 'Generating… (up to a minute)' };
+      var LOCAL_ONLY = { he: 'זמין רק כשמריצים node server.js מקומית', en: 'Only available when running node server.js locally' };
       btn.addEventListener('click', function () {
         btn.disabled = true;
-        var original = btn.textContent;
-        btn.textContent = 'מייצר סיכום… (עד דקה)';
+        var originalHe = btn.dataset.he, originalEn = btn.dataset.en;
+        btn.textContent = GENERATING[currentLang];
         fetch('/api/generate-digest', { method: 'POST' })
           .then(function (res) { if (!res.ok) throw new Error('failed'); return res.json(); })
           .then(function () { window.location.href = 'digest.html'; })
           .catch(function () {
-            btn.textContent = 'זמין רק כשמריצים node server.js מקומית';
-            setTimeout(function () { btn.textContent = original; btn.disabled = false; }, 3000);
+            btn.textContent = LOCAL_ONLY[currentLang];
+            setTimeout(function () {
+              btn.textContent = currentLang === 'en' ? originalEn : originalHe;
+              btn.disabled = false;
+            }, 3000);
           });
       });
     })();

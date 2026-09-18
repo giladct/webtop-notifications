@@ -155,7 +155,7 @@ function messageNeedsAttention(msg) {
   const body = msg.body || '';
 
   if (/חתימה|לחתום/.test(body)) {
-    return { flagged: true, reason: 'דורש חתימה/אישור מכם' };
+    return { flagged: true, reason: 'דורש חתימה/אישור מכם', reasonEn: 'Needs your signature/approval' };
   }
 
   const m = body.match(/עד\s*(?:ל-?)?(?:תאריך\s*)?(\d{1,2})\/(\d{1,2})/);
@@ -165,11 +165,11 @@ function messageNeedsAttention(msg) {
     const [, dd, mm] = m;
     const deadline = new Date(`${year}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}T23:59:59`);
     if (deadline >= new Date()) {
-      return { flagged: true, reason: `דדליין: ${dd}/${mm}` };
+      return { flagged: true, reason: `דדליין: ${dd}/${mm}`, reasonEn: `Deadline: ${dd}/${mm}` };
     }
   }
 
-  return { flagged: false, reason: null };
+  return { flagged: false, reason: null, reasonEn: null };
 }
 
 function parseMessageRowText(text) {
@@ -350,14 +350,14 @@ function subcategoryColor(s) {
 // and groups everything per child. Nothing here invents information — it only
 // reclassifies and dates text that was already scraped from Webtop.
 const CATEGORY_META = {
-  action:   { icon: '🔴', label: 'צריך לעשות',  color: '#d64545' },
-  bring:    { icon: '🎒', label: 'להביא',        color: '#3fa15e' },
-  payment:  { icon: '💰', label: 'תשלום',        color: '#c98a1c' },
-  test:     { icon: '🧪', label: 'מבחן',         color: '#8a4fd6' },
-  homework: { icon: '📝', label: 'שיעורי בית',   color: '#2f8fd6' },
-  school:   { icon: '📚', label: 'בית ספר',      color: '#2f6fed' },
-  event:    { icon: '📅', label: 'אירוע',        color: '#e0913f' },
-  update:   { icon: '📢', label: 'עדכון',        color: '#7a7f8a' },
+  action:   { icon: '🔴', label: 'צריך לעשות',  labelEn: 'Action',   color: '#d64545' },
+  bring:    { icon: '🎒', label: 'להביא',        labelEn: 'Bring',    color: '#3fa15e' },
+  payment:  { icon: '💰', label: 'תשלום',        labelEn: 'Payment',  color: '#c98a1c' },
+  test:     { icon: '🧪', label: 'מבחן',         labelEn: 'Test',     color: '#8a4fd6' },
+  homework: { icon: '📝', label: 'שיעורי בית',   labelEn: 'Homework', color: '#2f8fd6' },
+  school:   { icon: '📚', label: 'בית ספר',      labelEn: 'School',   color: '#2f6fed' },
+  event:    { icon: '📅', label: 'אירוע',        labelEn: 'Event',    color: '#e0913f' },
+  update:   { icon: '📢', label: 'עדכון',        labelEn: 'Update',   color: '#7a7f8a' },
 };
 
 // Order matters — checked top to bottom, first match wins (e.g. a form that
@@ -381,19 +381,19 @@ function classifyItemCategory(text) {
 
 // Section grouping + order for the full Today's Digest page.
 const DIGEST_SECTIONS = [
-  { key: 'need', label: 'צריך לעשות', icon: '🔴', categories: ['action', 'payment'] },
-  { key: 'bring', label: 'להביא', icon: '🎒', categories: ['bring'] },
-  { key: 'school', label: 'בית ספר', icon: '📚', categories: ['homework', 'test', 'school'] },
-  { key: 'upcoming', label: 'בקרוב', icon: '📅', categories: ['event'] },
-  { key: 'update', label: 'כדאי לדעת', icon: '📢', categories: ['update'] },
+  { key: 'need', label: 'צריך לעשות', labelEn: 'Need to do', icon: '🔴', categories: ['action', 'payment'] },
+  { key: 'bring', label: 'להביא', labelEn: 'Bring', icon: '🎒', categories: ['bring'] },
+  { key: 'school', label: 'בית ספר', labelEn: 'School', icon: '📚', categories: ['homework', 'test', 'school'] },
+  { key: 'upcoming', label: 'בקרוב', labelEn: 'Coming up', icon: '📅', categories: ['event'] },
+  { key: 'update', label: 'כדאי לדעת', labelEn: 'Good to know', icon: '📢', categories: ['update'] },
 ];
 
 // Condensed grouping for the Home Dashboard child cards (4 fixed rows).
 const HOME_SECTIONS = [
-  { key: 'need', label: 'דרוש טיפול', icon: '🔴', categories: ['action', 'payment', 'bring'] },
-  { key: 'school', label: 'שיעורי בית ומבחנים', icon: '📚', categories: ['homework', 'test', 'school'] },
-  { key: 'upcoming', label: 'אירועים קרובים', icon: '📅', categories: ['event'] },
-  { key: 'update', label: 'עדכונים חשובים', icon: '📢', categories: ['update'] },
+  { key: 'need', label: 'דרוש טיפול', labelEn: 'Needs attention', icon: '🔴', categories: ['action', 'payment', 'bring'] },
+  { key: 'school', label: 'שיעורי בית ומבחנים', labelEn: 'Homework & tests', icon: '📚', categories: ['homework', 'test', 'school'] },
+  { key: 'upcoming', label: 'אירועים קרובים', labelEn: 'Upcoming events', icon: '📅', categories: ['event'] },
+  { key: 'update', label: 'עדכונים חשובים', labelEn: 'Important updates', icon: '📢', categories: ['update'] },
 ];
 
 // Categories worth a calendar entry. 'update' (grades, disruptions, absences,
@@ -741,17 +741,29 @@ function htmlEscape(s) {
     .replace(/\n/g, '<br>');
 }
 
+// UI-chrome text that toggles between Hebrew and English client-side (see the
+// EN/עברית switch in the nav). Only fixed labels/buttons/headers go through
+// this — actual notification/message content stays Hebrew always, since it's
+// scraped free text that can't be machine-translated without risking
+// distorting what the school actually said.
+function tr(he, en) {
+  return `<span class="i18n" data-he="${htmlEscape(he)}" data-en="${htmlEscape(en)}">${htmlEscape(he)}</span>`;
+}
+function trOpt(he, en, extraAttrs = '') {
+  return `<option class="i18n-el" data-he="${htmlEscape(he)}" data-en="${htmlEscape(en)}" ${extraAttrs}>${htmlEscape(he)}</option>`;
+}
+
 const NAV_PAGES = [
-  { file: 'index.html', label: '🎒 School HQ' },
-  { file: 'digest.html', label: '✨ סיכום היום' },
-  { file: 'notifications-14days.html', label: 'כל ההתראות', secondary: true },
-  { file: 'messages-inbox.html', label: 'הודעות נכנסות', secondary: true },
+  { file: 'index.html', labelHe: '🎒 School HQ', labelEn: '🎒 School HQ' },
+  { file: 'digest.html', labelHe: '✨ סיכום היום', labelEn: "✨ Today's Digest" },
+  { file: 'notifications-14days.html', labelHe: 'כל ההתראות', labelEn: 'All Notifications', secondary: true },
+  { file: 'messages-inbox.html', labelHe: 'הודעות נכנסות', labelEn: 'Inbox', secondary: true },
 ];
 
-function pageShell(title, activeFile, bodyHtml) {
+function pageShell(titleHe, titleEn, activeFile, bodyHtml) {
   const now = new Date();
   const nav = NAV_PAGES.map(p => `
-    <a class="nav-link${p.secondary ? ' secondary' : ''}${p.file === activeFile ? ' active' : ''}" href="${p.file}">${htmlEscape(p.label)}</a>
+    <a class="nav-link${p.secondary ? ' secondary' : ''}${p.file === activeFile ? ' active' : ''}" href="${p.file}">${tr(p.labelHe, p.labelEn)}</a>
   `).join('');
 
   return `<!DOCTYPE html>
@@ -759,7 +771,7 @@ function pageShell(title, activeFile, bodyHtml) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${htmlEscape(title)} — Webtop</title>
+<title class="i18n-el" data-he="${htmlEscape(titleHe)} — Webtop" data-en="${htmlEscape(titleEn)} — Webtop">${htmlEscape(titleHe)} — Webtop</title>
 <style>
   :root {
     --bg: #f5f6f8;
@@ -805,6 +817,7 @@ function pageShell(title, activeFile, bodyHtml) {
   }
   .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
   .nav-link.secondary { opacity: 0.65; font-size: 12px; }
+  .lang-toggle { font-weight: 700; cursor: pointer; }
   header { margin-bottom: 20px; text-align: center; }
   header h1 { font-size: 22px; margin: 0 0 4px; }
   header p { color: var(--sub-text); margin: 0; font-size: 14px; }
@@ -1020,14 +1033,37 @@ function pageShell(title, activeFile, bodyHtml) {
 </head>
 <body>
   <div class="wrap">
-    <nav class="pagenav">${nav}</nav>
+    <nav class="pagenav">${nav}<button id="lang-toggle" class="nav-link lang-toggle" type="button">EN</button></nav>
     <header>
-      <h1>${htmlEscape(title)}</h1>
+      <h1 class="i18n-el" data-he="${htmlEscape(titleHe)}" data-en="${htmlEscape(titleEn)}">${htmlEscape(titleHe)}</h1>
       <p>Generated ${now.toLocaleString('en-GB')}</p>
     </header>
     ${bodyHtml}
   </div>
   <script>
+    var currentLang = 'he';
+    function applyLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.i18n, .i18n-el').forEach(function (el) {
+        var text = lang === 'en' ? el.dataset.en : el.dataset.he;
+        if (text != null) {
+          if (el.tagName === 'TITLE') { document.title = text; }
+          else { el.textContent = text; }
+        }
+      });
+      document.documentElement.dir = 'rtl';
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.textContent = lang === 'en' ? 'עברית' : 'EN';
+      try { localStorage.setItem('webtop-lang', lang); } catch (e) {}
+    }
+    (function () {
+      var saved = 'he';
+      try { saved = localStorage.getItem('webtop-lang') || 'he'; } catch (e) {}
+      applyLang(saved);
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.addEventListener('click', function () { applyLang(currentLang === 'en' ? 'he' : 'en'); });
+    })();
+
     document.querySelectorAll('table').forEach(function (table) {
       var headRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
       if (!headRow) return;
@@ -1091,16 +1127,21 @@ function pageShell(title, activeFile, bodyHtml) {
     (function () {
       var btn = document.getElementById('gen-digest-btn');
       if (!btn) return;
+      var GENERATING = { he: 'מייצר סיכום… (עד דקה)', en: 'Generating… (up to a minute)' };
+      var LOCAL_ONLY = { he: 'זמין רק כשמריצים node server.js מקומית', en: 'Only available when running node server.js locally' };
       btn.addEventListener('click', function () {
         btn.disabled = true;
-        var original = btn.textContent;
-        btn.textContent = 'מייצר סיכום… (עד דקה)';
+        var originalHe = btn.dataset.he, originalEn = btn.dataset.en;
+        btn.textContent = GENERATING[currentLang];
         fetch('/api/generate-digest', { method: 'POST' })
           .then(function (res) { if (!res.ok) throw new Error('failed'); return res.json(); })
           .then(function () { window.location.href = 'digest.html'; })
           .catch(function () {
-            btn.textContent = 'זמין רק כשמריצים node server.js מקומית';
-            setTimeout(function () { btn.textContent = original; btn.disabled = false; }, 3000);
+            btn.textContent = LOCAL_ONLY[currentLang];
+            setTimeout(function () {
+              btn.textContent = currentLang === 'en' ? originalEn : originalHe;
+              btn.disabled = false;
+            }, 3000);
           });
       });
     })();
@@ -1134,7 +1175,7 @@ function generateAllNotificationsPage(children) {
   const insights = generateInsights(children);
   const insightsSection = insights.length ? `
     <section class="card">
-      <h3>תובנות סטטיסטיות</h3>
+      <h3>${tr('תובנות סטטיסטיות', 'Statistical Insights')}</h3>
       <ul class="insights">
         ${insights.map(i => `<li>${htmlEscape(i)}</li>`).join('')}
       </ul>
@@ -1149,9 +1190,9 @@ function generateAllNotificationsPage(children) {
 
   const filters = `
     <div class="filters">
-      <select id="filter-child"><option value="">כל הילדים</option>${optionsFor(uniqueChildren)}</select>
-      <select id="filter-category"><option value="">כל הקטגוריות</option>${optionsFor(uniqueCategories)}</select>
-      <select id="filter-subcategory"><option value="">כל תתי-הקטגוריות</option>${optionsFor(uniqueSubcategories)}</select>
+      <select id="filter-child">${trOpt('כל הילדים', 'All children', 'value=""')}${optionsFor(uniqueChildren)}</select>
+      <select id="filter-category">${trOpt('כל הקטגוריות', 'All categories', 'value=""')}${optionsFor(uniqueCategories)}</select>
+      <select id="filter-subcategory">${trOpt('כל תתי-הקטגוריות', 'All topics', 'value=""')}${optionsFor(uniqueSubcategories)}</select>
     </div>
   `;
 
@@ -1179,7 +1220,7 @@ function generateAllNotificationsPage(children) {
       </div>` : '<p class="empty">No notifications in this window.</p>'}
     </section>
   `;
-  return pageShell('כל ההתראות ב-14 יום האחרונים', 'notifications-14days.html', body);
+  return pageShell('כל ההתראות ב-14 יום האחרונים', 'All Notifications (14 days)', 'notifications-14days.html', body);
 }
 
 function generateMessagesInboxPage(sources) {
@@ -1196,13 +1237,13 @@ function generateMessagesInboxPage(sources) {
       <summary>
         <div class="msg-head">
           <span class="msg-subject">${htmlEscape(m.subject)}</span>
-          ${attn.flagged ? `<span class="attn-badge">דורש תשומת לב — ${htmlEscape(attn.reason)}</span>` : ''}
+          ${attn.flagged ? `<span class="attn-badge">${tr('דורש תשומת לב', 'Needs attention')} — ${tr(attn.reason, attn.reasonEn)}</span>` : ''}
           <span class="msg-meta" dir="ltr">${htmlEscape(m.date)}</span>
         </div>
         <div class="msg-meta">${htmlEscape(m.sender)} · ${htmlEscape(m.children.join(', '))}</div>
         ${m.summary ? `<p class="msg-summary">${htmlEscape(m.summary)}</p>` : ''}
       </summary>
-      ${m.body ? `<p class="msg-body">${htmlEscape(m.body)}</p>` : '<p class="empty">אין תוכן זמין.</p>'}
+      ${m.body ? `<p class="msg-body">${htmlEscape(m.body)}</p>` : `<p class="empty">${tr('אין תוכן זמין.', 'No content available.')}</p>`}
     </details>
   `;
   }).join('');
@@ -1215,14 +1256,14 @@ function generateMessagesInboxPage(sources) {
       ${all.length ? items : '<p class="empty">No messages found.</p>'}
     </section>
   `;
-  return pageShell('הודעות נכנסות', 'messages-inbox.html', body);
+  return pageShell('הודעות נכנסות', 'Inbox', 'messages-inbox.html', body);
 }
 
 function digestOriginalHtml(source) {
   if (source.type === 'notification') {
     return `<div class="digest-original">[${htmlEscape(source.category)}] ${htmlEscape(source.date)}<br>${htmlEscape(source.content)}</div>`;
   }
-  return `<div class="digest-original">${htmlEscape(source.sender)} · ${htmlEscape(source.date)}<br><strong>${htmlEscape(source.subject)}</strong><br>${htmlEscape(source.body || 'אין תוכן זמין.')}</div>`;
+  return `<div class="digest-original">${htmlEscape(source.sender)} · ${htmlEscape(source.date)}<br><strong>${htmlEscape(source.subject)}</strong><br>${source.body ? htmlEscape(source.body) : tr('אין תוכן זמין.', 'No content available.')}</div>`;
 }
 
 // A single item card: chip + title + detail, an "Add to Calendar" link when a
@@ -1232,12 +1273,12 @@ function renderItemCard(item, child) {
   const meta = CATEGORY_META[item.category];
   const waHref = `https://wa.me/?text=${encodeURIComponent(itemWhatsAppText(child, item))}`;
   const calBtn = item.date && CALENDAR_CATEGORIES.includes(item.category)
-    ? `<a class="btn-mini" href="${googleCalendarUrl(item, child)}" target="_blank" rel="noopener">📅 הוסף ליומן</a>` : '';
+    ? `<a class="btn-mini" href="${googleCalendarUrl(item, child)}" target="_blank" rel="noopener">📅 ${tr('הוסף ליומן', 'Add to Calendar')}</a>` : '';
   const detailHtml = item.detail && item.detail !== item.title ? `<p class="item-detail">${htmlEscape(item.detail)}</p>` : '';
   return `
     <div class="item-card">
       <div class="item-head">
-        <span class="chip" style="--c:${meta.color}">${meta.icon} ${htmlEscape(meta.label)}</span>
+        <span class="chip" style="--c:${meta.color}">${meta.icon} ${tr(meta.label, meta.labelEn)}</span>
         ${item.dateDisplay ? `<span class="item-date">${htmlEscape(item.dateDisplay)}${item.time ? ' · ' + htmlEscape(item.time) : ''}</span>` : ''}
         ${item.count > 1 ? `<span class="item-date">×${item.count}</span>` : ''}
       </div>
@@ -1245,9 +1286,9 @@ function renderItemCard(item, child) {
       ${detailHtml}
       <div class="item-actions">
         ${calBtn}
-        <a class="btn-mini" href="${waHref}" target="_blank" rel="noopener">💬 וואטסאפ</a>
+        <a class="btn-mini" href="${waHref}" target="_blank" rel="noopener">💬 ${tr('וואטסאפ', 'WhatsApp')}</a>
       </div>
-      <details class="original-toggle"><summary>הצג מקור</summary>${digestOriginalHtml(item.source)}</details>
+      <details class="original-toggle"><summary>${tr('הצג מקור', 'View original')}</summary>${digestOriginalHtml(item.source)}</details>
     </div>
   `;
 }
@@ -1260,11 +1301,12 @@ function homeSectionItems(items, categories) {
 // four rows each (need-to-do / school / upcoming / updates), each capped at two
 // visible lines with a "+N more" link into the full Today's Digest.
 function generateHomePage(todayChildren) {
-  const todayDisplay = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayDisplayHe = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayDisplayEn = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
 
   const cards = todayChildren.map(({ name, items }) => {
     const meta = childMeta(name);
-    const sectionsHtml = HOME_SECTIONS.map(({ label, icon, categories }) => {
+    const sectionsHtml = HOME_SECTIONS.map(({ label, labelEn, icon, categories }) => {
       const list = homeSectionItems(items, categories);
       if (!list.length) return '';
       const shown = list.slice(0, 2);
@@ -1272,9 +1314,9 @@ function generateHomePage(todayChildren) {
       const lines = shown.map(i => `<li>${htmlEscape(i.title)}${i.count > 1 ? ` (×${i.count})` : ''}</li>`).join('');
       return `
         <div class="home-section">
-          <h4>${icon} ${htmlEscape(label)}</h4>
+          <h4>${icon} ${tr(label, labelEn)}</h4>
           <ul class="home-item-list">${lines}</ul>
-          ${more > 0 ? `<a class="more-link" href="digest.html">+${more} נוספים</a>` : ''}
+          ${more > 0 ? `<a class="more-link" href="digest.html">${tr(`+${more} נוספים`, `+${more} more`)}</a>` : ''}
         </div>
       `;
     }).join('');
@@ -1284,40 +1326,41 @@ function generateHomePage(todayChildren) {
           <span class="child-avatar">${meta.icon}</span>
           <h3>${htmlEscape(name)}</h3>
         </div>
-        ${items.length ? sectionsHtml : '<p class="all-clear">הכל תקין היום ✨</p>'}
+        ${items.length ? sectionsHtml : `<p class="all-clear">${tr('הכל תקין היום ✨', 'All clear today ✨')}</p>`}
       </div>
     `;
   }).join('');
 
   const body = `
     <section class="today-banner card">
-      <h2>היום</h2>
-      <p class="sub">${htmlEscape(todayDisplay)}</p>
+      <h2>${tr('היום', 'Today')}</h2>
+      <p class="sub">${tr(todayDisplayHe, todayDisplayEn)}</p>
     </section>
     <div class="child-cards-grid">${cards}</div>
     <section class="card" style="text-align:center;">
-      <a class="gen-btn" href="digest.html">✨ סיכום היום המלא</a>
+      <a class="gen-btn" href="digest.html">✨ ${tr('סיכום היום המלא', "Full Today's Digest")}</a>
     </section>
   `;
-  return pageShell('🎒 School HQ', 'index.html', body);
+  return pageShell('🎒 School HQ', '🎒 School HQ', 'index.html', body);
 }
 
 // "Today's Digest" — the full, verifiable version of the home cards, with
 // calendar/WhatsApp actions per item plus bulk actions for the whole day.
 function generateDigestPage(todayChildren, upcomingEvents) {
-  const todayDisplay = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayDisplayHe = new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayDisplayEn = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
 
   const childSections = todayChildren.map(({ name, items }) => {
     const meta = childMeta(name);
-    const sectionsHtml = DIGEST_SECTIONS.map(({ key, label, icon, categories }) => {
+    const sectionsHtml = DIGEST_SECTIONS.map(({ key, label, labelEn, icon, categories }) => {
       const list = items.filter(i => categories.includes(i.category));
       if (!list.length) return '';
-      return `<div class="digest-section ${key}"><h4>${icon} ${htmlEscape(label)}</h4>${list.map(i => renderItemCard(i, name)).join('')}</div>`;
+      return `<div class="digest-section ${key}"><h4>${icon} ${tr(label, labelEn)}</h4>${list.map(i => renderItemCard(i, name)).join('')}</div>`;
     }).join('');
     return `
       <section class="card child-digest" style="--child-c:${meta.color}">
         <h3>${meta.icon} ${htmlEscape(name)}</h3>
-        ${items.length ? sectionsHtml : '<p class="all-clear">הכל תקין היום ✨</p>'}
+        ${items.length ? sectionsHtml : `<p class="all-clear">${tr('הכל תקין היום ✨', 'All clear today ✨')}</p>`}
       </section>
     `;
   }).join('');
@@ -1329,25 +1372,25 @@ function generateDigestPage(todayChildren, upcomingEvents) {
 
   const body = `
     <section class="card digest-toolbar">
-      <button class="gen-btn" id="gen-digest-btn">צור סיכום להיום</button>
-      ${icsHref ? `<a class="cal-all-btn" download="family-events.ics" href="${icsHref}">📅 הוסף את כל האירועים הקרובים (${upcomingEvents.length})</a>` : ''}
-      <a class="wa-all-btn" href="${waFullHref}" target="_blank" rel="noopener">💬 שתף את סיכום היום</a>
-      <a class="nav-link" href="digest-history.html">היסטוריית סיכומים ←</a>
+      <button class="gen-btn i18n-el" id="gen-digest-btn" data-he="צור סיכום להיום" data-en="Generate Today's Digest">צור סיכום להיום</button>
+      ${icsHref ? `<a class="cal-all-btn" download="family-events.ics" href="${icsHref}">📅 ${tr(`הוסף את כל האירועים הקרובים (${upcomingEvents.length})`, `Add All Upcoming Events (${upcomingEvents.length})`)}</a>` : ''}
+      <a class="wa-all-btn" href="${waFullHref}" target="_blank" rel="noopener">💬 ${tr('שתף את סיכום היום', "Share Today's Digest")}</a>
+      <a class="nav-link" href="digest-history.html">${tr('היסטוריית סיכומים ←', 'Digest History ←')}</a>
     </section>
     ${childSections}
   `;
-  return pageShell(`✨ סיכום היום – ${todayDisplay}`, 'digest.html', body);
+  return pageShell(`✨ סיכום היום – ${todayDisplayHe}`, `✨ Today's Digest – ${todayDisplayEn}`, 'digest.html', body);
 }
 
 function generateDigestHistoryPage(historyEntries) {
   const links = historyEntries.map(({ date, dateDisplay }) => `<a href="digests/digest-${date}.html">${htmlEscape(dateDisplay)}</a>`).join('');
   const body = `
     <section class="card">
-      <h3>היסטוריית סיכומים</h3>
-      ${historyEntries.length ? `<div class="history-list">${links}</div>` : '<p class="empty">אין עדיין סיכומים שמורים.</p>'}
+      <h3>${tr('היסטוריית סיכומים', 'Digest History')}</h3>
+      ${historyEntries.length ? `<div class="history-list">${links}</div>` : `<p class="empty">${tr('אין עדיין סיכומים שמורים.', 'No digests saved yet.')}</p>`}
     </section>
   `;
-  return pageShell('היסטוריית סיכומים יומיים', '', body);
+  return pageShell('היסטוריית סיכומים יומיים', 'Daily Digest History', '', body);
 }
 
 (async () => {
