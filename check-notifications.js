@@ -117,6 +117,39 @@ async function scrapeNotifications(page) {
   return { sessionExpired: false, rows };
 }
 
+// "ציונים שוטפים" tab of the student card (/Student_Card -> tab). Notifications
+// only say that a grade was recorded; the score itself lives only here. Returns
+// [] (never throws) if the tab can't be read, so a layout change degrades the
+// summary instead of failing the whole run.
+async function scrapeGrades(page) {
+  try {
+    await page.goto('https://webtop.smartschool.co.il/Student_Card', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(1000);
+    await page.getByText('ציונים שוטפים', { exact: true }).first().click({ timeout: 5000 });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForTimeout(2000);
+    return await page.evaluate(() => {
+      const clean = el => {
+        if (!el) return '';
+        const c = el.cloneNode(true);
+        c.querySelectorAll('.cdk-visually-hidden, .web-hidden').forEach(n => n.remove());
+        return c.textContent.replace(/\s+/g, ' ').trim();
+      };
+      const cell = (row, i) => clean(row.querySelector(`[aria-colindex="${i}"]`));
+      return Array.from(document.querySelectorAll('.card-content-row'))
+        .filter(r => !r.className.includes('table-row-title') && r.querySelector('[aria-colindex="4"]'))
+        .map(r => ({
+          event: cell(r, 1), teacher: cell(r, 2), subject: cell(r, 3),
+          score: cell(r, 4), verbal: cell(r, 5), weight: cell(r, 6), date: cell(r, 9),
+        }))
+        .filter(g => g.event && (g.score || g.verbal));
+    });
+  } catch (e) {
+    console.error('Could not read grades:', e.message);
+    return [];
+  }
+}
+
 function parseMsgDate(dateStr) {
   const m = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
   if (!m) return null;
@@ -1361,9 +1394,20 @@ function generateHomePage(todayChildren) {
 const SUMMARY_PERIODS = [
   { days: 7, labelHe: '7 ימים', labelEn: '7 days' },
   { days: 28, labelHe: '28 ימים', labelEn: '28 days' },
+  // School year starts 1 Sep; the window is computed so it always reaches back to that date.
+  { days: Math.ceil((Date.now() - new Date(new Date().getFullYear(), 8, 1).getTime()) / 86400000) + 1, labelHe: 'מתחילת השנה (1.9)', labelEn: 'Since Sep 1' },
 ];
 
-function summarizeChildPeriod(rows, days) {
+// A "grade recorded" notification names the subject and the date the assessment
+// took place; the grades tab lists the same assessment with its score.
+function findGradeFor(notification, grades) {
+  const d = (notification.content.match(/בתאריך\s+(\d{2}\/\d{2}\/\d{4})/) || [])[1];
+  const subj = extractSubject(notification.content);
+  if (!d || !subj) return null;
+  return grades.find(g => g.date.includes(d) && g.subject.startsWith(subj)) || null;
+}
+
+function summarizeChildPeriod(rows, days, grades = []) {
   const inWin = withinWindow(rows, days);
   const pick = imp => inWin.filter(r => classifyImportance(r) === imp);
   const lineOf = r => {
@@ -1372,6 +1416,19 @@ function summarizeChildPeriod(rows, days) {
     const d = r.date.match(/(\d{2}\/\d{2})\/\d{4}/);
     return { date: d ? d[1] : '', subcategory: sub, subject: subj || '', content: r.content };
   };
+  // A grade belongs to the period if it was recorded in it (notification) or the
+  // assessment itself took place in it.
+  const cutoff = Date.now() - days * 86400000;
+  const recorded = new Set(pick('grade').map(r => findGradeFor(r, grades)).filter(Boolean));
+  const gradeEntries = grades.filter(g => {
+    const m = g.date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    const inPeriod = m && new Date(`${m[3]}-${m[2]}-${m[1]}T23:59:00`).getTime() >= cutoff;
+    return inPeriod || recorded.has(g);
+  }).map(g => ({
+    date: (g.date.match(/(\d{2}\/\d{2})\/\d{4}/) || [])[1] || '',
+    subcategory: 'ציון', subject: g.subject.replace(/\s*\(.*$/, ''),
+    score: g.score, verbal: g.verbal, event: g.event,
+  }));
   const homework = inWin.filter(r => extractSubcategory(r.content) === 'עדכון שיעורי בית');
   const hwBySubject = {};
   for (const r of homework) {
@@ -1380,7 +1437,8 @@ function summarizeChildPeriod(rows, days) {
   }
   return {
     total: inWin.length,
-    grades: pick('grade').map(lineOf),
+    // Grade notifications with no matching grades-tab row (tab unreadable) still show, just without a score.
+    grades: gradeEntries.concat(pick('grade').filter(r => !findGradeFor(r, grades)).map(lineOf)),
     concerns: pick('concern').map(lineOf),
     praise: pick('praise').map(lineOf),
     homeworkCount: homework.length,
@@ -1390,13 +1448,13 @@ function summarizeChildPeriod(rows, days) {
 
 function generateSummaryPage(children) {
   const renderLines = (list, color) => list.length
-    ? `<ul class="sum-list">${list.map(l => `<li><span class="sum-date">${htmlEscape(l.date)}</span> <span class="cat-badge" style="--c:${color}">${htmlEscape(l.subcategory)}</span>${l.subject ? ` <b>${htmlEscape(l.subject)}</b>` : ''}</li>`).join('')}</ul>`
+    ? `<ul class="sum-list">${list.map(l => `<li><span class="sum-date">${htmlEscape(l.date)}</span> <span class="cat-badge" style="--c:${color}">${htmlEscape(l.subcategory)}</span>${l.subject ? ` <b>${htmlEscape(l.subject)}</b>` : ''}${l.score ? ` — <b class="sum-score">${htmlEscape(l.score)}</b>` : ''}${l.verbal ? ` ${htmlEscape(l.verbal)}` : ''}${l.event ? ` <span class="sum-event">${htmlEscape(l.event)}</span>` : ''}</li>`).join('')}</ul>`
     : '';
 
   const periodHtml = ({ days, labelHe, labelEn }, idx) => {
-    const cards = children.map(({ name, rows }) => {
+    const cards = children.map(({ name, rows, grades }) => {
       const meta = childMeta(name);
-      const s = summarizeChildPeriod(rows, days);
+      const s = summarizeChildPeriod(rows, days, grades || []);
       const stat = (n, he, en, color) => `<div class="sum-stat" style="--c:${color}"><b>${n}</b><span>${tr(he, en)}</span></div>`;
       const hw = s.hwBySubject.slice(0, 5).map(([subj, n]) => `${htmlEscape(subj)} (${n})`).join(' · ');
       const lessonTitle = (he, en, list, color) => list.length ? `<h4>${tr(he, en)}</h4>${renderLines(list, color)}` : '';
@@ -1435,6 +1493,8 @@ function generateSummaryPage(children) {
       .sum-stat span { font-size: 11px; color: var(--sub-text); }
       .sum-list { list-style: none; margin: 0 0 8px; padding: 0; font-size: 13px; }
       .sum-list li { padding: 3px 0; }
+      .sum-score { color: var(--accent); font-size: 15px; }
+      .sum-event { color: var(--sub-text); font-size: 12px; }
       .sum-date { color: var(--sub-text); margin-inline-end: 4px; }
       .sum-hw { font-size: 13px; color: var(--sub-text); margin: 8px 0 0; }
       .child-card h4 { margin: 10px 0 4px; font-size: 14px; }
@@ -1451,7 +1511,7 @@ function generateSummaryPage(children) {
       });
     </script>
   `;
-  return pageShell('סיכום 7 ו-28 ימים', '7 & 28-Day Summary', 'summary.html', body);
+  return pageShell('סיכום', 'Summary', 'summary.html', body);
 }
 
 // "Today's Digest" — the full, verifiable version of the home cards, with
@@ -1550,7 +1610,8 @@ function generateDigestHistoryPage(historyEntries) {
     }
     summaryLines.push('');
 
-    htmlChildren.push({ name: childName, rows });
+    const grades = await scrapeGrades(page);
+    htmlChildren.push({ name: childName, rows, grades });
   }
 
   const messageSources = [];
