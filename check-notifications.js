@@ -19,8 +19,8 @@ const UNKNOWN_CHILD = 'לא ברור למי';
 // messages are identical whether איתן or עלמה is the selected student, and
 // the Alterman school currently sends none at all.
 const MESSAGE_SOURCES = [
-  { key: 'alterman', parentMatch: 'הורה בתיכונט ע"ש אלתרמן', studentMatch: null, children: ['אלה'] },
-  { key: 'ramat-aviv', parentMatch: 'הורה ברמת אביב', studentMatch: 'כהן-טל איתן', children: ['איתן', 'עלמה'] },
+  { key: 'alterman', parentMatch: '515502', studentMatch: null, children: ['אלה'] },
+  { key: 'ramat-aviv', parentMatch: '513341', studentMatch: 'כהן-טל איתן', children: ['איתן', 'עלמה'] },
 ];
 
 // Each target is a child. `parentMatch` selects the top-right parent/school profile.
@@ -28,9 +28,9 @@ const MESSAGE_SOURCES = [
 // switcher that appears when a parent profile has more than one linked child
 // (e.g. the Ramat Aviv profile covers both איתן and עלמה as siblings).
 const TARGETS = [
-  { key: 'ella-alterman', displayName: 'אלה', parentMatch: 'הורה בתיכונט ע"ש אלתרמן', studentMatch: null },
-  { key: 'eitan-ramat-aviv', displayName: 'איתן', parentMatch: 'הורה ברמת אביב', studentMatch: 'כהן-טל איתן' },
-  { key: 'alma-ramat-aviv', displayName: 'עלמה', parentMatch: 'הורה ברמת אביב', studentMatch: 'כהן-טל עלמה' },
+  { key: 'ella-alterman', displayName: 'אלה', parentMatch: '515502', studentMatch: null },
+  { key: 'eitan-ramat-aviv', displayName: 'איתן', parentMatch: '513341', studentMatch: 'כהן-טל איתן' },
+  { key: 'alma-ramat-aviv', displayName: 'עלמה', parentMatch: '513341', studentMatch: 'כהן-טל עלמה' },
 ];
 
 function rowKey(row) {
@@ -59,9 +59,16 @@ async function clickTopProfileSwitcher(page) {
 async function switchToTarget(page, target) {
   await page.goto('https://webtop.smartschool.co.il/dashboard', { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForTimeout(800);
-  await clickTopProfileSwitcher(page);
-  await page.waitForTimeout(800);
-  await page.locator('mat-option', { hasText: target.parentMatch }).click({ timeout: 5000 });
+  // The dropdown sometimes doesn't open on the first click while the dashboard
+  // is still settling, so retry opening it until the target option shows up.
+  const parentOption = page.locator('mat-option', { hasText: target.parentMatch });
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await clickTopProfileSwitcher(page);
+    if (await parentOption.first().waitFor({ timeout: 3000 }).then(() => true, () => false)) break;
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(1500);
+  }
+  await parentOption.click({ timeout: 5000 });
   await page.waitForTimeout(1500);
   await page.waitForLoadState('networkidle').catch(() => {});
 
