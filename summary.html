@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title class="i18n-el" data-he="סיכום 7 ו-28 ימים — Webtop" data-en="7 &amp; 28-Day Summary — Webtop">סיכום 7 ו-28 ימים — Webtop</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1c1e21;
+    --sub-text: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2f6fed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --card-bg: #1f2227;
+      --text: #eaecef;
+      --sub-text: #9aa0a8;
+      --border: #2c2f36;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px 10px 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  nav.pagenav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .nav-link {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--sub-text);
+    text-decoration: none;
+    background: var(--card-bg);
+  }
+  .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .nav-link.secondary { opacity: 0.65; font-size: 12px; }
+  .lang-toggle { font-weight: 700; cursor: pointer; }
+  header { margin-bottom: 20px; text-align: center; }
+  header h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { color: var(--sub-text); margin: 0; font-size: 14px; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .card h2 { margin: 0 0 4px; font-size: 19px; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .sub { color: var(--sub-text); margin: 0 0 14px; font-size: 14px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .pill {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    white-space: nowrap;
+  }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+  th { color: var(--sub-text); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--text); }
+  th.sortable::after { content: ''; display: inline-block; width: 0.6em; opacity: 0.4; }
+  th.sort-asc::after { content: '▲'; opacity: 1; font-size: 9px; }
+  th.sort-desc::after { content: '▼'; opacity: 1; font-size: 9px; }
+  .date-cell { white-space: normal; word-break: break-word; color: var(--sub-text); font-size: 13px; max-width: 80px; }
+  .child-cell { white-space: nowrap; font-weight: 600; width: 1%; }
+  .cat-cell { width: 90px; max-width: 90px; }
+  .subject-cell { max-width: 90px; color: var(--sub-text); font-size: 13px; }
+  .cat-badge {
+    display: inline-block;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  @media (max-width: 640px) {
+    .card { padding: 12px; margin-bottom: 12px; }
+    .cat-cell { width: 54px; max-width: 54px; }
+    .subject-cell { max-width: 54px; }
+    .date-cell { max-width: 52px; }
+    table { font-size: 12px; }
+    th, td { padding: 4px 5px; }
+  }
+  .empty { color: var(--sub-text); font-size: 14px; }
+  ul.insights { margin: 0; padding-inline-start: 20px; font-size: 14px; line-height: 1.7; }
+  ul.insights li { margin-bottom: 4px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .filters select {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+  }
+  .msg-item { border-bottom: 1px solid var(--border); padding: 14px 0; }
+  .msg-item:last-child { border-bottom: none; }
+  .msg-item.needs-attention { border-inline-start: 3px solid #d64545; padding-inline-start: 11px; margin-inline-start: -14px; }
+  .attn-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, #d64545 15%, transparent);
+    color: #d64545;
+    white-space: nowrap;
+  }
+  .msg-item > summary { cursor: pointer; list-style: none; }
+  .msg-item > summary::-webkit-details-marker { display: none; }
+  .msg-item > summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-inline-end: 6px;
+    color: var(--sub-text);
+    transition: transform .15s;
+  }
+  .msg-item[open] > summary::before { transform: rotate(90deg); }
+  .msg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .msg-subject { font-weight: 600; font-size: 15px; }
+  .msg-meta { color: var(--sub-text); font-size: 13px; }
+  .msg-summary { font-size: 14px; margin: 4px 0 0; }
+  .msg-body {
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 10px 0 0;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  .digest-original {
+    white-space: pre-wrap;
+    font-size: 13px;
+    color: var(--sub-text);
+    margin: 8px 0 0;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .gen-btn, .cal-all-btn, .wa-all-btn {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .cal-all-btn, .wa-all-btn { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+  .gen-btn:disabled { opacity: 0.6; cursor: default; }
+  .history-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .history-list a {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  /* ---- School HQ home dashboard ---- */
+  .today-banner { text-align: center; }
+  .today-banner h2 { margin: 0 0 2px; font-size: 20px; }
+  .child-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .child-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--child-c, var(--accent));
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .child-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .child-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--child-c, var(--accent)) 18%, transparent);
+  }
+  .child-card-head h3 { margin: 0; font-size: 17px; }
+  .home-section { margin-bottom: 10px; }
+  .home-section:last-child { margin-bottom: 0; }
+  .home-section h4 { margin: 0 0 4px; font-size: 12px; color: var(--sub-text); }
+  .home-item-list { margin: 0; padding-inline-start: 18px; font-size: 13px; line-height: 1.5; }
+  .more-link { font-size: 12px; color: var(--accent); text-decoration: none; }
+  .all-clear { color: var(--sub-text); font-size: 14px; margin: 0; }
+
+  /* ---- Today's Digest ---- */
+  .digest-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .child-digest { border-top: 4px solid var(--child-c, var(--accent)); }
+  .child-digest h3 { margin: 0 0 12px; font-size: 18px; }
+  .digest-section { margin-bottom: 14px; }
+  .digest-section:last-child { margin-bottom: 0; }
+  .digest-section h4 { margin: 0 0 8px; font-size: 13px; color: var(--sub-text); }
+  .item-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .item-card:last-child { margin-bottom: 0; }
+  .item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .chip {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    color: var(--c);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .item-date { font-size: 12px; color: var(--sub-text); white-space: nowrap; }
+  .item-title { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+  .item-detail { font-size: 13px; color: var(--sub-text); margin: 2px 0 8px; }
+  .item-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .btn-mini {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .original-toggle { margin-top: 8px; font-size: 12px; }
+  .original-toggle summary { cursor: pointer; color: var(--sub-text); list-style: none; }
+  .original-toggle summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="pagenav">
+    <a class="nav-link" href="index.html"><span class="i18n" data-he="🎒 School HQ" data-en="🎒 School HQ">🎒 School HQ</span></a>
+  
+    <a class="nav-link" href="digest.html"><span class="i18n" data-he="✨ סיכום היום" data-en="✨ Today's Digest">✨ סיכום היום</span></a>
+  
+    <a class="nav-link active" href="summary.html"><span class="i18n" data-he="📊 סיכום" data-en="📊 Summary">📊 סיכום</span></a>
+  
+    <a class="nav-link secondary" href="notifications-14days.html"><span class="i18n" data-he="כל ההתראות" data-en="All Notifications">כל ההתראות</span></a>
+  
+    <a class="nav-link secondary" href="messages-inbox.html"><span class="i18n" data-he="הודעות נכנסות" data-en="Inbox">הודעות נכנסות</span></a>
+  <button id="lang-toggle" class="nav-link lang-toggle" type="button">EN</button></nav>
+    <header>
+      <h1 class="i18n-el" data-he="סיכום 7 ו-28 ימים" data-en="7 &amp; 28-Day Summary">סיכום 7 ו-28 ימים</h1>
+      <p>Generated 11/10/2026, 14:37:51</p>
+    </header>
+    
+    <style>
+      .sum-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+      .sum-tab { font: inherit; font-size: 14px; padding: 7px 22px; border-radius: 999px; cursor: pointer;
+        border: 1px solid var(--border); background: var(--card-bg); color: var(--text); }
+      .sum-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .sum-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 10px; }
+      .sum-stat { text-align: center; padding: 8px 2px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+        background: color-mix(in srgb, var(--c) 12%, transparent); }
+      .sum-stat b { display: block; font-size: 20px; color: var(--c); }
+      .sum-stat span { font-size: 11px; color: var(--sub-text); }
+      .sum-list { list-style: none; margin: 0 0 8px; padding: 0; font-size: 13px; }
+      .sum-list li { padding: 3px 0; }
+      .sum-date { color: var(--sub-text); margin-inline-end: 4px; }
+      .sum-hw { font-size: 13px; color: var(--sub-text); margin: 8px 0 0; }
+      .child-card h4 { margin: 10px 0 4px; font-size: 14px; }
+      .sum-period[hidden] { display: none; }
+    </style>
+    <div class="sum-tabs"><button type="button" class="sum-tab active" data-period="7"><span class="i18n" data-he="7 ימים" data-en="7 days">7 ימים</span></button><button type="button" class="sum-tab" data-period="28"><span class="i18n" data-he="28 ימים" data-en="28 days">28 ימים</span></button></div>
+    <div class="sum-period" id="period-7"><div class="child-cards-grid">
+        <div class="child-card" style="--child-c:#e0577f">
+          <div class="child-card-head"><span class="child-avatar">👧</span><h3>אלה</h3></div>
+          <div class="sum-stats">
+            <div class="sum-stat" style="--c:#d64545"><b>0</b><span><span class="i18n" data-he="לתשומת לב" data-en="Concerns">לתשומת לב</span></span></div>
+            <div class="sum-stat" style="--c:#3fa15e"><b>1</b><span><span class="i18n" data-he="מילים טובות" data-en="Praise">מילים טובות</span></span></div>
+            <div class="sum-stat" style="--c:#2f6fed"><b>2</b><span><span class="i18n" data-he="ציונים" data-en="Grades">ציונים</span></span></div>
+            <div class="sum-stat" style="--c:#7a7f8a"><b>1</b><span><span class="i18n" data-he="עדכוני שיעורי בית" data-en="Homework">עדכוני שיעורי בית</span></span></div>
+          </div>
+          
+          <h4><span class="i18n" data-he="👏 מילים טובות" data-en="👏 Praise">👏 מילים טובות</span></h4><ul class="sum-list"><li><span class="sum-date">08/10</span> <span class="cat-badge" style="--c:#3fa15e">מילה טובה</span> <b>אזרחות</b></li></ul>
+          <h4><span class="i18n" data-he="📊 ציונים" data-en="📊 Grades">📊 ציונים</span></h4><ul class="sum-list"><li><span class="sum-date">11/10</span> <span class="cat-badge" style="--c:#2f6fed">ציון</span> <b>מתמטיקה א'</b></li><li><span class="sum-date">07/10</span> <span class="cat-badge" style="--c:#2f6fed">ציון</span> <b>אנגלית</b></li></ul>
+          <p class="sum-hw"><b><span class="i18n" data-he="שיעורי בית לפי מקצוע:" data-en="Homework by subject:">שיעורי בית לפי מקצוע:</span></b> לשון והבעה (1)</p>
+          
+        </div>
+        <div class="child-card" style="--child-c:#2f8fd6">
+          <div class="child-card-head"><span class="child-avatar">👦</span><h3>איתן</h3></div>
+          <div class="sum-stats">
+            <div class="sum-stat" style="--c:#d64545"><b>3</b><span><span class="i18n" data-he="לתשומת לב" data-en="Concerns">לתשומת לב</span></span></div>
+            <div class="sum-stat" style="--c:#3fa15e"><b>0</b><span><span class="i18n" data-he="מילים טובות" data-en="Praise">מילים טובות</span></span></div>
+            <div class="sum-stat" style="--c:#2f6fed"><b>0</b><span><span class="i18n" data-he="ציונים" data-en="Grades">ציונים</span></span></div>
+            <div class="sum-stat" style="--c:#7a7f8a"><b>11</b><span><span class="i18n" data-he="עדכוני שיעורי בית" data-en="Homework">עדכוני שיעורי בית</span></span></div>
+          </div>
+          <h4><span class="i18n" data-he="⚠️ לתשומת לב" data-en="⚠️ Concerns">⚠️ לתשומת לב</span></h4><ul class="sum-list"><li><span class="sum-date">11/10</span> <span class="cat-badge" style="--c:#d64545">אחר</span> <b>אנגלית</b></li><li><span class="sum-date">08/10</span> <span class="cat-badge" style="--c:#d64545">חיסור</span> <b>מתמטיקה</b></li><li><span class="sum-date">08/10</span> <span class="cat-badge" style="--c:#d64545">חיסור</span> <b>תנ``ך</b></li></ul>
+          
+          
+          <p class="sum-hw"><b><span class="i18n" data-he="שיעורי בית לפי מקצוע:" data-en="Homework by subject:">שיעורי בית לפי מקצוע:</span></b> שפה (5) · אנגלית (3) · מתמטיקה (1) · היסטוריה (1) · כישורי חיים (1)</p>
+          
+        </div>
+        <div class="child-card" style="--child-c:#8a4fd6">
+          <div class="child-card-head"><span class="child-avatar">👧</span><h3>עלמה</h3></div>
+          <div class="sum-stats">
+            <div class="sum-stat" style="--c:#d64545"><b>0</b><span><span class="i18n" data-he="לתשומת לב" data-en="Concerns">לתשומת לב</span></span></div>
+            <div class="sum-stat" style="--c:#3fa15e"><b>1</b><span><span class="i18n" data-he="מילים טובות" data-en="Praise">מילים טובות</span></span></div>
+            <div class="sum-stat" style="--c:#2f6fed"><b>0</b><span><span class="i18n" data-he="ציונים" data-en="Grades">ציונים</span></span></div>
+            <div class="sum-stat" style="--c:#7a7f8a"><b>3</b><span><span class="i18n" data-he="עדכוני שיעורי בית" data-en="Homework">עדכוני שיעורי בית</span></span></div>
+          </div>
+          
+          <h4><span class="i18n" data-he="👏 מילים טובות" data-en="👏 Praise">👏 מילים טובות</span></h4><ul class="sum-list"><li><span class="sum-date">07/10</span> <span class="cat-badge" style="--c:#3fa15e">חיזוק חיובי</span> <b>תורה</b></li></ul>
+          
+          <p class="sum-hw"><b><span class="i18n" data-he="שיעורי בית לפי מקצוע:" data-en="Homework by subject:">שיעורי בית לפי מקצוע:</span></b> אנגלית (2) · תיאטרון (1)</p>
+          
+        </div></div></div><div class="sum-period" id="period-28" hidden><div class="child-cards-grid">
+        <div class="child-card" style="--child-c:#e0577f">
+          <div class="child-card-head"><span class="child-avatar">👧</span><h3>אלה</h3></div>
+          <div class="sum-stats">
+            <div class="sum-stat" style="--c:#d64545"><b>0</b><span><span class="i18n" data-he="לתשומת לב" data-en="Concerns">לתשומת לב</span></span></div>
+            <div class="sum-stat" style="--c:#3fa15e"><b>4</b><span><span class="i18n" data-he="מילים טובות" data-en="Praise">מילים טובות</span></span></div>
+            <div class="sum-stat" style="--c:#2f6fed"><b>2</b><span><span class="i18n" data-he="ציונים" data-en="Grades">ציונים</span></span></div>
+            <div class="sum-stat" style="--c:#7a7f8a"><b>3</b><span><span class="i18n" data-he="עדכוני שיעורי בית" data-en="Homework">עדכוני שיעורי בית</span></span></div>
+          </div>
+          
+          <h4><span class="i18n" data-he="👏 מילים טובות" data-en="👏 Praise">👏 מילים טובות</span></h4><ul class="sum-list"><li><span class="sum-date">08/10</span> <span class="cat-badge" style="--c:#3fa15e">מילה טובה</span> <b>אזרחות</b></li><li><span class="sum-date">04/10</span> <span class="cat-badge" style="--c:#3fa15e">מילה טובה</span> <b>אזרחות</b></li><li><span class="sum-date">17/09</span> <span class="cat-badge" style="--c:#3fa15e">מילה טובה</span> <b>לשון והבעה</b></li><li><span class="sum-date">15/09</span> <span class="cat-badge" style="--c:#3fa15e">מילה טובה</span> <b>לשון והבעה</b></li></ul>
+          <h4><span class="i18n" data-he="📊 ציונים" data-en="📊 Grades">📊 ציונים</span></h4><ul class="sum-list"><li><span class="sum-date">11/10</span> <span class="cat-badge" style="--c:#2f6fed">ציון</span> <b>מתמטיקה א'</b></li><li><span class="sum-date">07/10</span> <span class="cat-badge" style="--c:#2f6fed">ציון</span> <b>אנגלית</b></li></ul>
+          <p class="sum-hw"><b><span class="i18n" data-he="שיעורי בית לפי מקצוע:" data-en="Homework by subject:">שיעורי בית לפי מקצוע:</span></b> לשון והבעה (3)</p>
+          
+        </div>
+        <div class="child-card" style="--child-c:#2f8fd6">
+          <div class="child-card-head"><span class="child-avatar">👦</span><h3>איתן</h3></div>
+          <div class="sum-stats">
+            <div class="sum-stat" style="--c:#d64545"><b>10</b><span><span class="i18n" data-he="לתשומת לב" data-en="Concerns">לתשומת לב</span></span></div>
+            <div class="sum-stat" style="--c:#3fa15e"><b>0</b><span><span class="i18n" data-he="מילים טובות" data-en="Praise">מילים טובות</span></span></div>
+            <div class="sum-stat" style="--c:#2f6fed"><b>0</b><span><span class="i18n" data-he="ציונים" data-en="Grades">ציונים</span></span></div>
+            <div class="sum-stat" style="--c:#7a7f8a"><b>22</b><span><span class="i18n" data-he="עדכוני שיעורי בית" data-en="Homework">עדכוני שיעורי בית</span></span></div>
+          </div>
+          <h4><span class="i18n" data-he="⚠️ לתשומת לב" data-en="⚠️ Concerns">⚠️ לתשומת לב</span></h4><ul class="sum-list"><li><span class="sum-date">11/10</span> <span class="cat-badge" style="--c:#d64545">אחר</span> <b>אנגלית</b></li><li><span class="sum-date">08/10</span> <span class="cat-badge" style="--c:#d64545">חיסור</span> <b>מתמטיקה</b></li><li><span class="sum-date">08/10</span> <span class="cat-badge" style="--c:#d64545">חיסור</span> <b>תנ``ך</b></li><li><span class="sum-date">04/10</span> <span class="cat-badge" style="--c:#d64545">הפרעה</span> <b>אנגלית</b></li><li><span class="sum-date">17/09</span> <span class="cat-badge" style="--c:#d64545">הפרעה</span> <b>שעת חינוך- מפתח הלב</b></li><li><span class="sum-date">15/09</span> <span class="cat-badge" style="--c:#d64545">הפרעה</span> <b>מתמטיקה</b></li><li><span class="sum-date">15/09</span> <span class="cat-badge" style="--c:#d64545">ציוד</span> <b>תנ``ך</b></li><li><span class="sum-date">14/09</span> <span class="cat-badge" style="--c:#d64545">אחר</span> <b>מדע וטכנולוגיה</b></li><li><span class="sum-date">14/09</span> <span class="cat-badge" style="--c:#d64545">ציוד</span> <b>מדע וטכנולוגיה</b></li><li><span class="sum-date">14/09</span> <span class="cat-badge" style="--c:#d64545">הפרעה</span> <b>אנגלית</b></li></ul>
+          
+          
+          <p class="sum-hw"><b><span class="i18n" data-he="שיעורי בית לפי מקצוע:" data-en="Homework by subject:">שיעורי בית לפי מקצוע:</span></b> שפה (10) · אנגלית (6) · מתמטיקה (2) · מדע וטכנולוגיה (2) · היסטוריה (1)</p>
+          
+        </div>
+        <div class="child-card" style="--child-c:#8a4fd6">
+          <div class="child-card-head"><span class="child-avatar">👧</span><h3>עלמה</h3></div>
+          <div class="sum-stats">
+            <div class="sum-stat" style="--c:#d64545"><b>0</b><span><span class="i18n" data-he="לתשומת לב" data-en="Concerns">לתשומת לב</span></span></div>
+            <div class="sum-stat" style="--c:#3fa15e"><b>1</b><span><span class="i18n" data-he="מילים טובות" data-en="Praise">מילים טובות</span></span></div>
+            <div class="sum-stat" style="--c:#2f6fed"><b>0</b><span><span class="i18n" data-he="ציונים" data-en="Grades">ציונים</span></span></div>
+            <div class="sum-stat" style="--c:#7a7f8a"><b>8</b><span><span class="i18n" data-he="עדכוני שיעורי בית" data-en="Homework">עדכוני שיעורי בית</span></span></div>
+          </div>
+          
+          <h4><span class="i18n" data-he="👏 מילים טובות" data-en="👏 Praise">👏 מילים טובות</span></h4><ul class="sum-list"><li><span class="sum-date">07/10</span> <span class="cat-badge" style="--c:#3fa15e">חיזוק חיובי</span> <b>תורה</b></li></ul>
+          
+          <p class="sum-hw"><b><span class="i18n" data-he="שיעורי בית לפי מקצוע:" data-en="Homework by subject:">שיעורי בית לפי מקצוע:</span></b> אנגלית (4) · תיאטרון (2) · מדע וטכנולוגיה (2)</p>
+          
+        </div></div></div>
+    <script>
+      document.querySelectorAll('.sum-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.sum-tab').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          document.querySelectorAll('.sum-period').forEach(function (p) { p.hidden = p.id !== 'period-' + btn.dataset.period; });
+        });
+      });
+    </script>
+  
+  </div>
+  <script>
+    var currentLang = 'he';
+    function applyLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.i18n, .i18n-el').forEach(function (el) {
+        var text = lang === 'en' ? el.dataset.en : el.dataset.he;
+        if (text != null) {
+          if (el.tagName === 'TITLE') { document.title = text; }
+          else { el.textContent = text; }
+        }
+      });
+      document.documentElement.dir = 'rtl';
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.textContent = lang === 'en' ? 'עברית' : 'EN';
+      try { localStorage.setItem('webtop-lang', lang); } catch (e) {}
+    }
+    (function () {
+      var saved = 'he';
+      try { saved = localStorage.getItem('webtop-lang') || 'he'; } catch (e) {}
+      applyLang(saved);
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.addEventListener('click', function () { applyLang(currentLang === 'en' ? 'he' : 'en'); });
+    })();
+
+    document.querySelectorAll('table').forEach(function (table) {
+      var headRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
+      if (!headRow) return;
+      Array.from(headRow.cells).forEach(function (th, colIndex) {
+        th.classList.add('sortable');
+        th.addEventListener('click', function () {
+          var tbody = table.tBodies[0];
+          if (!tbody) return;
+          var rows = Array.from(tbody.rows);
+          var newDir = th.classList.contains('sort-asc') ? 'desc' : 'asc';
+          Array.from(headRow.cells).forEach(function (c) { c.classList.remove('sort-asc', 'sort-desc'); });
+          th.classList.add(newDir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+          function getValue(row) {
+            var cell = row.cells[colIndex];
+            if (!cell) return '';
+            if (cell.dataset.sort !== undefined) return cell.dataset.sort;
+            return cell.textContent.trim();
+          }
+
+          rows.sort(function (a, b) {
+            var va = getValue(a), vb = getValue(b);
+            var na = Number(va), nb = Number(vb);
+            var cmp;
+            if (va !== '' && vb !== '' && !isNaN(na) && !isNaN(nb)) {
+              cmp = na - nb;
+            } else {
+              cmp = va.localeCompare(vb, 'he');
+            }
+            return newDir === 'asc' ? cmp : -cmp;
+          });
+
+          rows.forEach(function (row) { tbody.appendChild(row); });
+        });
+      });
+    });
+
+    (function () {
+      var childSel = document.getElementById('filter-child');
+      var catSel = document.getElementById('filter-category');
+      var subcatSel = document.getElementById('filter-subcategory');
+      if (!childSel && !catSel && !subcatSel) return;
+
+      function applyFilters() {
+        var childVal = childSel ? childSel.value : '';
+        var catVal = catSel ? catSel.value : '';
+        var subcatVal = subcatSel ? subcatSel.value : '';
+        document.querySelectorAll('tbody tr[data-child]').forEach(function (row) {
+          var show = (!childVal || row.dataset.child === childVal) &&
+                     (!catVal || row.dataset.category === catVal) &&
+                     (!subcatVal || row.dataset.subcategory === subcatVal);
+          row.style.display = show ? '' : 'none';
+        });
+      }
+
+      [childSel, catSel, subcatSel].forEach(function (sel) {
+        if (sel) sel.addEventListener('change', applyFilters);
+      });
+    })();
+
+    (function () {
+      var btn = document.getElementById('gen-digest-btn');
+      if (!btn) return;
+      var GENERATING = { he: 'מייצר סיכום… (עד דקה)', en: 'Generating… (up to a minute)' };
+      var LOCAL_ONLY = { he: 'זמין רק כשמריצים node server.js מקומית', en: 'Only available when running node server.js locally' };
+      btn.addEventListener('click', function () {
+        btn.disabled = true;
+        var originalHe = btn.dataset.he, originalEn = btn.dataset.en;
+        btn.textContent = GENERATING[currentLang];
+        fetch('/api/generate-digest', { method: 'POST' })
+          .then(function (res) { if (!res.ok) throw new Error('failed'); return res.json(); })
+          .then(function () { window.location.href = 'digest.html'; })
+          .catch(function () {
+            btn.textContent = LOCAL_ONLY[currentLang];
+            setTimeout(function () {
+              btn.textContent = currentLang === 'en' ? originalEn : originalHe;
+              btn.disabled = false;
+            }, 3000);
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

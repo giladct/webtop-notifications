@@ -8,6 +8,7 @@ const SUMMARY_TXT = path.join(DIR, 'notifications-summary.txt');
 const PAGE_ALL = path.join(DIR, 'notifications-14days.html');
 const PAGE_MSG_INBOX = path.join(DIR, 'messages-inbox.html');
 const PAGE_INDEX = path.join(DIR, 'index.html');
+const PAGE_SUMMARY = path.join(DIR, 'summary.html');
 const PAGE_DIGEST = path.join(DIR, 'digest.html');
 const PAGE_DIGEST_HISTORY = path.join(DIR, 'digest-history.html');
 const DIGESTS_DIR = path.join(DIR, 'digests');
@@ -303,7 +304,7 @@ function classifyImportance(row) {
   if (c.includes('אי הבאת ציוד')) return 'concern';
   if (c.includes('אי הכנ')) return 'concern';
   if (c.includes('נרשם לך אחר')) return 'concern';
-  if (c.includes('מילה טובה')) return 'praise';
+  if (c.includes('מילה טובה') || c.includes('חיזוק חיובי')) return 'praise';
   return 'routine';
 }
 
@@ -327,6 +328,7 @@ function extractSubject(content) {
 // both a disruption and a positive remark, so this pulls out the actual event type.
 function extractSubcategory(content) {
   if (content.includes('מילה טובה')) return 'מילה טובה';
+  if (content.includes('חיזוק חיובי')) return 'חיזוק חיובי';
   if (content.includes('הפרע')) return 'הפרעה';
   if (content.includes('אי הבאת ציוד')) return 'ציוד';
   if (content.includes('חיסור')) return 'חיסור';
@@ -339,6 +341,7 @@ function extractSubcategory(content) {
 
 const SUBCATEGORY_COLORS = {
   'מילה טובה': '#3fa15e',
+  'חיזוק חיובי': '#3fa15e',
   'הפרעה': '#d64545',
   'ציוד': '#d64545',
   'חיסור': '#d64545',
@@ -763,6 +766,7 @@ function trOpt(he, en, extraAttrs = '') {
 const NAV_PAGES = [
   { file: 'index.html', labelHe: '🎒 School HQ', labelEn: '🎒 School HQ' },
   { file: 'digest.html', labelHe: '✨ סיכום היום', labelEn: "✨ Today's Digest" },
+  { file: 'summary.html', labelHe: '📊 סיכום', labelEn: '📊 Summary' },
   { file: 'notifications-14days.html', labelHe: 'כל ההתראות', labelEn: 'All Notifications', secondary: true },
   { file: 'messages-inbox.html', labelHe: 'הודעות נכנסות', labelEn: 'Inbox', secondary: true },
 ];
@@ -1351,6 +1355,105 @@ function generateHomePage(todayChildren) {
   return pageShell('🎒 School HQ', '🎒 School HQ', 'index.html', body);
 }
 
+// "Summary" tab — 7-day and 28-day roll-ups per child, built only from the
+// scraped notification rows (counts by type + the concrete grades/concerns/
+// praise behind them), so every number can be traced back to a row.
+const SUMMARY_PERIODS = [
+  { days: 7, labelHe: '7 ימים', labelEn: '7 days' },
+  { days: 28, labelHe: '28 ימים', labelEn: '28 days' },
+];
+
+function summarizeChildPeriod(rows, days) {
+  const inWin = withinWindow(rows, days);
+  const pick = imp => inWin.filter(r => classifyImportance(r) === imp);
+  const lineOf = r => {
+    const subj = extractSubject(r.content);
+    const sub = extractSubcategory(r.content);
+    const d = r.date.match(/(\d{2}\/\d{2})\/\d{4}/);
+    return { date: d ? d[1] : '', subcategory: sub, subject: subj || '', content: r.content };
+  };
+  const homework = inWin.filter(r => extractSubcategory(r.content) === 'עדכון שיעורי בית');
+  const hwBySubject = {};
+  for (const r of homework) {
+    const s = extractSubject(r.content) || 'אחר';
+    hwBySubject[s] = (hwBySubject[s] || 0) + 1;
+  }
+  return {
+    total: inWin.length,
+    grades: pick('grade').map(lineOf),
+    concerns: pick('concern').map(lineOf),
+    praise: pick('praise').map(lineOf),
+    homeworkCount: homework.length,
+    hwBySubject: Object.entries(hwBySubject).sort((a, b) => b[1] - a[1]),
+  };
+}
+
+function generateSummaryPage(children) {
+  const renderLines = (list, color) => list.length
+    ? `<ul class="sum-list">${list.map(l => `<li><span class="sum-date">${htmlEscape(l.date)}</span> <span class="cat-badge" style="--c:${color}">${htmlEscape(l.subcategory)}</span>${l.subject ? ` <b>${htmlEscape(l.subject)}</b>` : ''}</li>`).join('')}</ul>`
+    : '';
+
+  const periodHtml = ({ days, labelHe, labelEn }, idx) => {
+    const cards = children.map(({ name, rows }) => {
+      const meta = childMeta(name);
+      const s = summarizeChildPeriod(rows, days);
+      const stat = (n, he, en, color) => `<div class="sum-stat" style="--c:${color}"><b>${n}</b><span>${tr(he, en)}</span></div>`;
+      const hw = s.hwBySubject.slice(0, 5).map(([subj, n]) => `${htmlEscape(subj)} (${n})`).join(' · ');
+      const lessonTitle = (he, en, list, color) => list.length ? `<h4>${tr(he, en)}</h4>${renderLines(list, color)}` : '';
+      return `
+        <div class="child-card" style="--child-c:${meta.color}">
+          <div class="child-card-head"><span class="child-avatar">${meta.icon}</span><h3>${htmlEscape(name)}</h3></div>
+          <div class="sum-stats">
+            ${stat(s.concerns.length, 'לתשומת לב', 'Concerns', '#d64545')}
+            ${stat(s.praise.length, 'מילים טובות', 'Praise', '#3fa15e')}
+            ${stat(s.grades.length, 'ציונים', 'Grades', '#2f6fed')}
+            ${stat(s.homeworkCount, 'עדכוני שיעורי בית', 'Homework', '#7a7f8a')}
+          </div>
+          ${lessonTitle('⚠️ לתשומת לב', '⚠️ Concerns', s.concerns, '#d64545')}
+          ${lessonTitle('👏 מילים טובות', '👏 Praise', s.praise, '#3fa15e')}
+          ${lessonTitle('📊 ציונים', '📊 Grades', s.grades, '#2f6fed')}
+          ${hw ? `<p class="sum-hw"><b>${tr('שיעורי בית לפי מקצוע:', 'Homework by subject:')}</b> ${hw}</p>` : ''}
+          ${s.total ? '' : `<p class="all-clear">${tr('אין התראות בתקופה זו', 'No notifications in this period')}</p>`}
+        </div>`;
+    }).join('');
+    return `<div class="sum-period" id="period-${days}"${idx ? ' hidden' : ''}><div class="child-cards-grid">${cards}</div></div>`;
+  };
+
+  const tabs = SUMMARY_PERIODS.map((p, i) =>
+    `<button type="button" class="sum-tab${i ? '' : ' active'}" data-period="${p.days}">${tr(p.labelHe, p.labelEn)}</button>`).join('');
+
+  const body = `
+    <style>
+      .sum-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+      .sum-tab { font: inherit; font-size: 14px; padding: 7px 22px; border-radius: 999px; cursor: pointer;
+        border: 1px solid var(--border); background: var(--card-bg); color: var(--text); }
+      .sum-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .sum-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 10px; }
+      .sum-stat { text-align: center; padding: 8px 2px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+        background: color-mix(in srgb, var(--c) 12%, transparent); }
+      .sum-stat b { display: block; font-size: 20px; color: var(--c); }
+      .sum-stat span { font-size: 11px; color: var(--sub-text); }
+      .sum-list { list-style: none; margin: 0 0 8px; padding: 0; font-size: 13px; }
+      .sum-list li { padding: 3px 0; }
+      .sum-date { color: var(--sub-text); margin-inline-end: 4px; }
+      .sum-hw { font-size: 13px; color: var(--sub-text); margin: 8px 0 0; }
+      .child-card h4 { margin: 10px 0 4px; font-size: 14px; }
+      .sum-period[hidden] { display: none; }
+    </style>
+    <div class="sum-tabs">${tabs}</div>
+    ${SUMMARY_PERIODS.map(periodHtml).join('')}
+    <script>
+      document.querySelectorAll('.sum-tab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.sum-tab').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          document.querySelectorAll('.sum-period').forEach(function (p) { p.hidden = p.id !== 'period-' + btn.dataset.period; });
+        });
+      });
+    </script>
+  `;
+  return pageShell('סיכום 7 ו-28 ימים', '7 & 28-Day Summary', 'summary.html', body);
+}
+
 // "Today's Digest" — the full, verifiable version of the home cards, with
 // calendar/WhatsApp actions per item plus bulk actions for the whole day.
 function generateDigestPage(todayChildren, upcomingEvents) {
@@ -1491,6 +1594,7 @@ function generateDigestHistoryPage(historyEntries) {
   fs.writeFileSync(SUMMARY_TXT, summaryLines.join('\n'), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_ALL, generateAllNotificationsPage(htmlChildren), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_MSG_INBOX, generateMessagesInboxPage(messageSources), { encoding: 'utf8' });
+  fs.writeFileSync(PAGE_SUMMARY, generateSummaryPage(htmlChildren), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_DIGEST, generateDigestPage(todayChildren, upcomingEvents), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_DIGEST_HISTORY, generateDigestHistoryPage(historyEntries), { encoding: 'utf8' });
   fs.writeFileSync(PAGE_INDEX, generateHomePage(todayChildren), { encoding: 'utf8' });
