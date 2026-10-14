@@ -8,7 +8,8 @@ const SUMMARY_TXT = path.join(DIR, 'notifications-summary.txt');
 const PAGE_ALL = path.join(DIR, 'notifications-14days.html');
 const PAGE_MSG_INBOX = path.join(DIR, 'messages-inbox.html');
 const PAGE_INDEX = path.join(DIR, 'index.html');
-const PAGE_SUMMARY = path.join(DIR, 'summary.html');
+const MESSAGE_CACHE = path.join(DIR, 'messages-cache.json');
+const PAGE_SUMMARY =path.join(DIR, 'summary.html');
 const PAGE_DIGEST = path.join(DIR, 'digest.html');
 const PAGE_DIGEST_HISTORY = path.join(DIR, 'digest-history.html');
 const DIGESTS_DIR = path.join(DIR, 'digests');
@@ -129,10 +130,25 @@ async function scrapeNotifications(page) {
 // [] (never throws) if the tab can't be read, so a layout change degrades the
 // summary instead of failing the whole run.
 async function scrapeGrades(page) {
-  try {
+  // The tab occasionally doesn't render on the first load; retry before giving up.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await scrapeGradesOnce(page);
+    } catch (e) {
+      console.error(`Could not read grades (attempt ${attempt}/3):`, e.message.split('\n')[0]);
+    }
+  }
+  return [];
+}
+
+async function scrapeGradesOnce(page) {
+  {
     await page.goto('https://webtop.smartschool.co.il/Student_Card', { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1000);
-    await page.getByText('ציונים שוטפים', { exact: true }).first().click({ timeout: 5000 });
+    const tab = page.getByText('ציונים שוטפים', { exact: true }).first();
+    // Not every school exposes this tab (the Ramat Aviv profile doesn't) — that's "no grades", not an error.
+    if (!(await tab.waitFor({ timeout: 5000 }).then(() => true, () => false))) return [];
+    await tab.click({ timeout: 5000 });
     await page.waitForLoadState('networkidle').catch(() => {});
     await page.waitForTimeout(2000);
     return await page.evaluate(() => {
@@ -151,9 +167,6 @@ async function scrapeGrades(page) {
         }))
         .filter(g => g.event && (g.score || g.verbal));
     });
-  } catch (e) {
-    console.error('Could not read grades:', e.message);
-    return [];
   }
 }
 
@@ -269,6 +282,13 @@ async function scrollMessageList(page) {
 // first collect every message's metadata via scroll-accumulation (no clicking, so
 // the list stays intact throughout), then reload the list fresh for each message
 // and scroll-search it back into view just to click it once and grab its body.
+function loadMessageCache() {
+  try { return JSON.parse(fs.readFileSync(MESSAGE_CACHE, 'utf8')); } catch (e) { return {}; }
+}
+function saveMessageCache(cache) {
+  fs.writeFileSync(MESSAGE_CACHE, JSON.stringify(cache, null, 2), { encoding: 'utf8' });
+}
+
 async function scrapeMessages(page) {
   await page.goto('https://webtop.smartschool.co.il/Messages', { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForTimeout(1500);
@@ -299,7 +319,16 @@ async function scrapeMessages(page) {
   }
 
   // Phase 2: one fresh list load per message, scroll-search for it, click, extract body.
+  // Bodies of messages already fetched on an earlier run come from the local cache,
+  // so a daily run only opens messages that are new.
+  const cache = loadMessageCache();
   for (const meta of metaByKey.values()) {
+    const cached = cache[meta.key];
+    if (cached && cached.body) {
+      meta.body = cached.body;
+      meta.summary = cached.summary;
+      continue;
+    }
     await page.goto('https://webtop.smartschool.co.il/Messages', { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(1000);
     await dismissMessagesBanner(page);
@@ -330,6 +359,11 @@ async function scrapeMessages(page) {
       if (!clicked) await scrollMessageList(page);
     }
   }
+
+  for (const meta of metaByKey.values()) {
+    if (meta.body) cache[meta.key] = { body: meta.body, summary: meta.summary };
+  }
+  saveMessageCache(cache);
 
   return { sessionExpired: false, messages: [...metaByKey.values()] };
 }

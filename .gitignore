@@ -5,3 +5,4 @@ notifications-latest-*.json
 notifications-summary.txt
 digests/*.json
 digests/daily-digest.txt
+messages-cache.json
