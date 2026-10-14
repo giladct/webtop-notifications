@@ -57,9 +57,16 @@ async function clickTopProfileSwitcher(page) {
   return false;
 }
 
+class SessionExpiredError extends Error {}
+
 async function switchToTarget(page, target) {
   await page.goto('https://webtop.smartschool.co.il/dashboard', { waitUntil: 'networkidle', timeout: 30000 });
   await page.waitForTimeout(800);
+  // An expired session redirects to the login page (sometimes only after load);
+  // fail with a clear message instead of a confusing profile-dropdown timeout.
+  if (new URL(page.url()).pathname.startsWith('/account/login')) {
+    throw new SessionExpiredError('Webtop session expired — run: node login-setup.js');
+  }
   // The dropdown sometimes doesn't open on the first click while the dashboard
   // is still settling, so retry opening it until the target option shows up.
   const parentOption = page.locator('mat-option', { hasText: target.parentMatch });
@@ -1563,7 +1570,7 @@ function generateDigestHistoryPage(historyEntries) {
   return pageShell('היסטוריית סיכומים יומיים', 'Daily Digest History', '', body);
 }
 
-(async () => {
+async function main() {
   if (!fs.existsSync(SESSION_PATH)) {
     fs.writeFileSync(SUMMARY_TXT, `[${new Date().toISOString()}] No saved session found. Run login-setup.js first.\n`);
     process.exit(2);
@@ -1662,8 +1669,11 @@ function generateDigestHistoryPage(historyEntries) {
 
   console.log(`Wrote ${SUMMARY_TXT}, ${PAGE_ALL}, ${PAGE_MSG_INBOX}, ${PAGE_DIGEST}, ${PAGE_DIGEST_HISTORY}, ${PAGE_INDEX}`);
   if (anySessionExpired) process.exit(2);
-})().catch(e => {
+}
+
+main().catch(e => {
   fs.writeFileSync(SUMMARY_TXT, `[${new Date().toISOString()}] ERROR: ${e.message}\n`);
   console.error('ERROR:', e.message);
-  process.exit(1);
+  // exit 2 = session expired (run-daily.js skips the email on any non-zero exit)
+  process.exit(e instanceof SessionExpiredError ? 2 : 1);
 });
