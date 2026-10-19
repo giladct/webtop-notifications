@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title class="i18n-el" data-he="✨ סיכום היום – יום שני, 19 באוקטובר — Webtop" data-en="✨ Today's Digest – Monday, October 19 — Webtop">✨ סיכום היום – יום שני, 19 באוקטובר — Webtop</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1c1e21;
+    --sub-text: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2f6fed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --card-bg: #1f2227;
+      --text: #eaecef;
+      --sub-text: #9aa0a8;
+      --border: #2c2f36;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px 10px 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  nav.pagenav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .nav-link {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--sub-text);
+    text-decoration: none;
+    background: var(--card-bg);
+  }
+  .nav-link.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .nav-link.secondary { opacity: 0.65; font-size: 12px; }
+  .lang-toggle { font-weight: 700; cursor: pointer; }
+  header { margin-bottom: 20px; text-align: center; }
+  header h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { color: var(--sub-text); margin: 0; font-size: 14px; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .card h2 { margin: 0 0 4px; font-size: 19px; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .sub { color: var(--sub-text); margin: 0 0 14px; font-size: 14px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .pill {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    white-space: nowrap;
+  }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+  th { color: var(--sub-text); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--text); }
+  th.sortable::after { content: ''; display: inline-block; width: 0.6em; opacity: 0.4; }
+  th.sort-asc::after { content: '▲'; opacity: 1; font-size: 9px; }
+  th.sort-desc::after { content: '▼'; opacity: 1; font-size: 9px; }
+  .date-cell { white-space: normal; word-break: break-word; color: var(--sub-text); font-size: 13px; max-width: 80px; }
+  .child-cell { white-space: nowrap; font-weight: 600; width: 1%; }
+  .cat-cell { width: 90px; max-width: 90px; }
+  .subject-cell { max-width: 90px; color: var(--sub-text); font-size: 13px; }
+  .cat-badge {
+    display: inline-block;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    color: var(--c);
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  @media (max-width: 640px) {
+    .card { padding: 12px; margin-bottom: 12px; }
+    .cat-cell { width: 54px; max-width: 54px; }
+    .subject-cell { max-width: 54px; }
+    .date-cell { max-width: 52px; }
+    table { font-size: 12px; }
+    th, td { padding: 4px 5px; }
+  }
+  .empty { color: var(--sub-text); font-size: 14px; }
+  ul.insights { margin: 0; padding-inline-start: 20px; font-size: 14px; line-height: 1.7; }
+  ul.insights li { margin-bottom: 4px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .filters select {
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+  }
+  .msg-item { border-bottom: 1px solid var(--border); padding: 14px 0; }
+  .msg-item:last-child { border-bottom: none; }
+  .msg-item.needs-attention { border-inline-start: 3px solid #d64545; padding-inline-start: 11px; margin-inline-start: -14px; }
+  .attn-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: color-mix(in srgb, #d64545 15%, transparent);
+    color: #d64545;
+    white-space: nowrap;
+  }
+  .msg-item > summary { cursor: pointer; list-style: none; }
+  .msg-item > summary::-webkit-details-marker { display: none; }
+  .msg-item > summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-inline-end: 6px;
+    color: var(--sub-text);
+    transition: transform .15s;
+  }
+  .msg-item[open] > summary::before { transform: rotate(90deg); }
+  .msg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .msg-subject { font-weight: 600; font-size: 15px; }
+  .msg-meta { color: var(--sub-text); font-size: 13px; }
+  .msg-summary { font-size: 14px; margin: 4px 0 0; }
+  .msg-body {
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 10px 0 0;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  .digest-original {
+    white-space: pre-wrap;
+    font-size: 13px;
+    color: var(--sub-text);
+    margin: 8px 0 0;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .gen-btn, .cal-all-btn, .wa-all-btn {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .cal-all-btn, .wa-all-btn { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+  .gen-btn:disabled { opacity: 0.6; cursor: default; }
+  .history-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .history-list a {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  /* ---- School HQ home dashboard ---- */
+  .today-banner { text-align: center; }
+  .today-banner h2 { margin: 0 0 2px; font-size: 20px; }
+  .child-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .child-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--child-c, var(--accent));
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .child-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .child-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--child-c, var(--accent)) 18%, transparent);
+  }
+  .child-card-head h3 { margin: 0; font-size: 17px; }
+  .home-section { margin-bottom: 10px; }
+  .home-section:last-child { margin-bottom: 0; }
+  .home-section h4 { margin: 0 0 4px; font-size: 12px; color: var(--sub-text); }
+  .home-item-list { margin: 0; padding-inline-start: 18px; font-size: 13px; line-height: 1.5; }
+  .more-link { font-size: 12px; color: var(--accent); text-decoration: none; }
+  .all-clear { color: var(--sub-text); font-size: 14px; margin: 0; }
+
+  /* ---- Today's Digest ---- */
+  .digest-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .child-digest { border-top: 4px solid var(--child-c, var(--accent)); }
+  .child-digest h3 { margin: 0 0 12px; font-size: 18px; }
+  .digest-section { margin-bottom: 14px; }
+  .digest-section:last-child { margin-bottom: 0; }
+  .digest-section h4 { margin: 0 0 8px; font-size: 13px; color: var(--sub-text); }
+  .item-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .item-card:last-child { margin-bottom: 0; }
+  .item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .chip {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    color: var(--c);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .item-date { font-size: 12px; color: var(--sub-text); white-space: nowrap; }
+  .item-title { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+  .item-detail { font-size: 13px; color: var(--sub-text); margin: 2px 0 8px; }
+  .item-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .btn-mini {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .original-toggle { margin-top: 8px; font-size: 12px; }
+  .original-toggle summary { cursor: pointer; color: var(--sub-text); list-style: none; }
+  .original-toggle summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="pagenav">
+    <a class="nav-link" href="index.html"><span class="i18n" data-he="🎒 School HQ" data-en="🎒 School HQ">🎒 School HQ</span></a>
+  
+    <a class="nav-link active" href="digest.html"><span class="i18n" data-he="✨ סיכום היום" data-en="✨ Today's Digest">✨ סיכום היום</span></a>
+  
+    <a class="nav-link" href="summary.html"><span class="i18n" data-he="📊 סיכום" data-en="📊 Summary">📊 סיכום</span></a>
+  
+    <a class="nav-link secondary" href="notifications-14days.html"><span class="i18n" data-he="כל ההתראות" data-en="All Notifications">כל ההתראות</span></a>
+  
+    <a class="nav-link secondary" href="messages-inbox.html"><span class="i18n" data-he="הודעות נכנסות" data-en="Inbox">הודעות נכנסות</span></a>
+  <button id="lang-toggle" class="nav-link lang-toggle" type="button">EN</button></nav>
+    <header>
+      <h1 class="i18n-el" data-he="✨ סיכום היום – יום שני, 19 באוקטובר" data-en="✨ Today's Digest – Monday, October 19">✨ סיכום היום – יום שני, 19 באוקטובר</h1>
+      <p>Generated 19/10/2026, 14:55:02</p>
+    </header>
+    
+    <section class="card digest-toolbar">
+      <button class="gen-btn i18n-el" id="gen-digest-btn" data-he="צור סיכום להיום" data-en="Generate Today's Digest">צור סיכום להיום</button>
+      <a class="cal-all-btn" download="family-events.ics" href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRODID%3A-%2F%2FSchool%20HQ%2F%2FWebtop%20Digest%2F%2FHE%0D%0ABEGIN%3AVEVENT%0D%0AUID%3Awebtop-911062779%40family-school-hq%0D%0ASUMMARY%3A%D7%90%D7%99%D7%AA%D7%9F%20%E2%80%93%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20-%20%D7%AA%D7%A9%D7%A4%22%D7%96%0D%0ADTSTART%3BVALUE%3DDATE%3A20261029%0D%0ADTEND%3BVALUE%3DDATE%3A20261030%0D%0ADESCRIPTION%3A%D7%9E%D7%A6%22%D7%91%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%D7%9D%20%D7%9C%D7%A9%D7%A0%D7%AA%20%D7%94%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99%D7%9D%20%D7%AA%D7%A9%D7%A4%22%D7%96%20-%20%D7%9C%D7%90%D7%97%D7%A8%20%D7%A9%D7%90%D7%95%D7%A9%D7%A8%20%D7%A2%D7%9C%20%D7%99%D7%93%D7%99%20%D7%94%D7%A0%D7%94%D7%92%D7%AA%20%D7%94%D7%94%D7%95%D7%A8%D7%99%D7%9D%20%D7%95%D7%94%D7%A8%D7%A9%D7%95%D7%AA.%20%D7%99%D7%A9%20%D7%9C%D7%94%D7%A1%D7%93%D7%99%D7%A8%20%D7%90%D7%AA%20%D7%94%D7%AA%D7%A9%D7%9C%D7%95%D7%9D%20%D7%A2%D7%93%20%D7%9C%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2029%2F10.%20%D7%A0%D7%99%D7%AA%D7%9F%20%D7%9C%D7%A2%D7%A9%D7%95%D7%AA%20%D7%96%D7%90%D7%AA%20%D7%93%D7%A8%D7%9A%20%D7%90%D7%AA%D7%A8%20%D7%91%D7%99%D7%AA%20%D7%94%D7%A1%D7%A4%D7%A8%3A%C2%A0%C2%A0%D7%9C%D7%A9%D7%95%D7%A0%D7%99%D7%AA%20%D7%94%D7%95%D7%A8%D7%99%D7%9D-%D7%AA%D7%9C%D7%9E%D7%99%D7%93%D7%99%D7%9D%20%D7%95%D7%90%D7%96%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20https%3A%2F%2Framatavivg.tik-tak.net%2F%C2%A0%20%C2%A0%D7%90%D7%95%20%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA%20%D7%A6'%D7%A7%2F%D7%9E%D7%96%D7%95%D7%9E%D7%9F%20%D7%9C%D7%9E%D7%96%D7%9B%D7%99%D7%A8%D7%95%D7%AA%20%D7%91%D7%99%D7%AA%20%D7%94%D7%A1%D7%A4%D7%A8%E2%80%A6%0D%0AEND%3AVEVENT%0D%0ABEGIN%3AVEVENT%0D%0AUID%3Awebtop-186506797%40family-school-hq%0D%0ASUMMARY%3A%D7%A2%D7%9C%D7%9E%D7%94%20%E2%80%93%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20-%20%D7%AA%D7%A9%D7%A4%22%D7%96%0D%0ADTSTART%3BVALUE%3DDATE%3A20261029%0D%0ADTEND%3BVALUE%3DDATE%3A20261030%0D%0ADESCRIPTION%3A%D7%9E%D7%A6%22%D7%91%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%D7%9D%20%D7%9C%D7%A9%D7%A0%D7%AA%20%D7%94%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99%D7%9D%20%D7%AA%D7%A9%D7%A4%22%D7%96%20-%20%D7%9C%D7%90%D7%97%D7%A8%20%D7%A9%D7%90%D7%95%D7%A9%D7%A8%20%D7%A2%D7%9C%20%D7%99%D7%93%D7%99%20%D7%94%D7%A0%D7%94%D7%92%D7%AA%20%D7%94%D7%94%D7%95%D7%A8%D7%99%D7%9D%20%D7%95%D7%94%D7%A8%D7%A9%D7%95%D7%AA.%20%D7%99%D7%A9%20%D7%9C%D7%94%D7%A1%D7%93%D7%99%D7%A8%20%D7%90%D7%AA%20%D7%94%D7%AA%D7%A9%D7%9C%D7%95%D7%9D%20%D7%A2%D7%93%20%D7%9C%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2029%2F10.%20%D7%A0%D7%99%D7%AA%D7%9F%20%D7%9C%D7%A2%D7%A9%D7%95%D7%AA%20%D7%96%D7%90%D7%AA%20%D7%93%D7%A8%D7%9A%20%D7%90%D7%AA%D7%A8%20%D7%91%D7%99%D7%AA%20%D7%94%D7%A1%D7%A4%D7%A8%3A%C2%A0%C2%A0%D7%9C%D7%A9%D7%95%D7%A0%D7%99%D7%AA%20%D7%94%D7%95%D7%A8%D7%99%D7%9D-%D7%AA%D7%9C%D7%9E%D7%99%D7%93%D7%99%D7%9D%20%D7%95%D7%90%D7%96%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20https%3A%2F%2Framatavivg.tik-tak.net%2F%C2%A0%20%C2%A0%D7%90%D7%95%20%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA%20%D7%A6'%D7%A7%2F%D7%9E%D7%96%D7%95%D7%9E%D7%9F%20%D7%9C%D7%9E%D7%96%D7%9B%D7%99%D7%A8%D7%95%D7%AA%20%D7%91%D7%99%D7%AA%20%D7%94%D7%A1%D7%A4%D7%A8%E2%80%A6%0D%0AEND%3AVEVENT%0D%0AEND%3AVCALENDAR">📅 <span class="i18n" data-he="הוסף את כל האירועים הקרובים (2)" data-en="Add All Upcoming Events (2)">הוסף את כל האירועים הקרובים (2)</span></a>
+      <a class="wa-all-btn" href="https://wa.me/?text=%F0%9F%93%9A%20%D7%A1%D7%99%D7%9B%D7%95%D7%9D%20%D7%9E%D7%A9%D7%A4%D7%97%D7%AA%D7%99%20%E2%80%93%2019.10%0A%0A%F0%9F%91%A7%20%D7%90%D7%9C%D7%94%0A%F0%9F%93%9A%20%D7%91%D7%99%D7%AA%20%D7%A1%D7%A4%D7%A8%0A%E2%80%A2%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%0A%0A%F0%9F%91%A6%20%D7%90%D7%99%D7%AA%D7%9F%0A%F0%9F%94%B4%20%D7%A6%D7%A8%D7%99%D7%9A%20%D7%9C%D7%A2%D7%A9%D7%95%D7%AA%0A%E2%80%A2%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20-%20%D7%AA%D7%A9%D7%A4%22%D7%96%0A%F0%9F%93%9A%20%D7%91%D7%99%D7%AA%20%D7%A1%D7%A4%D7%A8%0A%E2%80%A2%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%0A%E2%80%A2%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%0A%E2%80%A2%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%0A%E2%80%A2%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%0A%F0%9F%93%A2%20%D7%9B%D7%93%D7%90%D7%99%20%D7%9C%D7%93%D7%A2%D7%AA%0A%E2%80%A2%20%D7%94%D7%A4%D7%A8%D7%A2%D7%94%0A%0A%F0%9F%91%A7%20%D7%A2%D7%9C%D7%9E%D7%94%0A%F0%9F%94%B4%20%D7%A6%D7%A8%D7%99%D7%9A%20%D7%9C%D7%A2%D7%A9%D7%95%D7%AA%0A%E2%80%A2%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20-%20%D7%AA%D7%A9%D7%A4%22%D7%96%0A%F0%9F%93%9A%20%D7%91%D7%99%D7%AA%20%D7%A1%D7%A4%D7%A8%0A%E2%80%A2%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA" target="_blank" rel="noopener">💬 <span class="i18n" data-he="שתף את סיכום היום" data-en="Share Today's Digest">שתף את סיכום היום</span></a>
+      <a class="nav-link" href="digest-history.html"><span class="i18n" data-he="היסטוריית סיכומים ←" data-en="Digest History ←">היסטוריית סיכומים ←</span></a>
+    </section>
+    
+      <section class="card child-digest" style="--child-c:#e0577f">
+        <h3>👧 אלה</h3>
+        <div class="digest-section school"><h4>📚 <span class="i18n" data-he="בית ספר" data-en="School">בית ספר</span></h4>
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#2f8fd6">📝 <span class="i18n" data-he="שיעורי בית" data-en="Homework">שיעורי בית</span></span>
+        <span class="item-date">יום שני, 19 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">עדכון שיעורי בית</div>
+      <p class="item-detail">אלה, עודכנו עבורך שיעורי-בית "ד" בשיעור חינוך פיננסי בתאריך 19/10/2026 בשיעור 1</p>
+      <div class="item-actions">
+        
+        <a class="btn-mini" href="https://wa.me/?text=%D7%90%D7%9C%D7%94%20%E2%80%93%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%20%F0%9F%93%9D%20%D7%99%D7%95%D7%9D%20%D7%A9%D7%A0%D7%99%2C%2019%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%90%D7%9C%D7%94%2C%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95%20%D7%A2%D7%91%D7%95%D7%A8%D7%9A%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99-%D7%91%D7%99%D7%AA%20%22%D7%93%22%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%20%D7%97%D7%99%D7%A0%D7%95%D7%9A%20%D7%A4%D7%99%D7%A0%D7%A0%D7%A1%D7%99%20%D7%91%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2019%2F10%2F2026%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%201" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">[נושאי שיעור ושיעורי-בית] יום שני, 19/10/2026 (08:36)<br>אלה, עודכנו עבורך שיעורי-בית "ד" בשיעור חינוך פיננסי בתאריך 19/10/2026 בשיעור 1</div></details>
+    </div>
+  </div>
+      </section>
+    
+      <section class="card child-digest" style="--child-c:#2f8fd6">
+        <h3>👦 איתן</h3>
+        <div class="digest-section need"><h4>🔴 <span class="i18n" data-he="צריך לעשות" data-en="Need to do">צריך לעשות</span></h4>
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#c98a1c">💰 <span class="i18n" data-he="תשלום" data-en="Payment">תשלום</span></span>
+        <span class="item-date">יום חמישי, 29 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">חוזר תשלומי הורים - תשפ"ז</div>
+      <p class="item-detail">מצ"ב חוזר תשלומים לשנת הלימודים תשפ"ז - לאחר שאושר על ידי הנהגת ההורים והרשות. יש להסדיר את התשלום עד לתאריך 29/10. ניתן לעשות זאת דרך אתר בית הספר:  לשונית הורים-תלמידים ואז תשלומי הורים https://ramatavivg.tik-tak.net/   או באמצעות צ'ק/מזומן למזכירות בית הספר…</p>
+      <div class="item-actions">
+        <a class="btn-mini" href="https://www.google.com/calendar/render?action=TEMPLATE&text=%D7%90%D7%99%D7%AA%D7%9F+%E2%80%93+%D7%97%D7%95%D7%96%D7%A8+%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99+%D7%94%D7%95%D7%A8%D7%99%D7%9D+-+%D7%AA%D7%A9%D7%A4%22%D7%96&dates=20261029%2F20261030&details=%D7%9E%D7%A6%22%D7%91+%D7%97%D7%95%D7%96%D7%A8+%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%D7%9D+%D7%9C%D7%A9%D7%A0%D7%AA+%D7%94%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99%D7%9D+%D7%AA%D7%A9%D7%A4%22%D7%96+-+%D7%9C%D7%90%D7%97%D7%A8+%D7%A9%D7%90%D7%95%D7%A9%D7%A8+%D7%A2%D7%9C+%D7%99%D7%93%D7%99+%D7%94%D7%A0%D7%94%D7%92%D7%AA+%D7%94%D7%94%D7%95%D7%A8%D7%99%D7%9D+%D7%95%D7%94%D7%A8%D7%A9%D7%95%D7%AA.+%D7%99%D7%A9+%D7%9C%D7%94%D7%A1%D7%93%D7%99%D7%A8+%D7%90%D7%AA+%D7%94%D7%AA%D7%A9%D7%9C%D7%95%D7%9D+%D7%A2%D7%93+%D7%9C%D7%AA%D7%90%D7%A8%D7%99%D7%9A+29%2F10.+%D7%A0%D7%99%D7%AA%D7%9F+%D7%9C%D7%A2%D7%A9%D7%95%D7%AA+%D7%96%D7%90%D7%AA+%D7%93%D7%A8%D7%9A+%D7%90%D7%AA%D7%A8+%D7%91%D7%99%D7%AA+%D7%94%D7%A1%D7%A4%D7%A8%3A%C2%A0%C2%A0%D7%9C%D7%A9%D7%95%D7%A0%D7%99%D7%AA+%D7%94%D7%95%D7%A8%D7%99%D7%9D-%D7%AA%D7%9C%D7%9E%D7%99%D7%93%D7%99%D7%9D+%D7%95%D7%90%D7%96+%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99+%D7%94%D7%95%D7%A8%D7%99%D7%9D+https%3A%2F%2Framatavivg.tik-tak.net%2F%C2%A0+%C2%A0%D7%90%D7%95+%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA+%D7%A6%27%D7%A7%2F%D7%9E%D7%96%D7%95%D7%9E%D7%9F+%D7%9C%D7%9E%D7%96%D7%9B%D7%99%D7%A8%D7%95%D7%AA+%D7%91%D7%99%D7%AA+%D7%94%D7%A1%D7%A4%D7%A8%E2%80%A6" target="_blank" rel="noopener">📅 <span class="i18n" data-he="הוסף ליומן" data-en="Add to Calendar">הוסף ליומן</span></a>
+        <a class="btn-mini" href="https://wa.me/?text=%D7%90%D7%99%D7%AA%D7%9F%20%E2%80%93%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20-%20%D7%AA%D7%A9%D7%A4%22%D7%96%20%F0%9F%92%B0%20%D7%99%D7%95%D7%9D%20%D7%97%D7%9E%D7%99%D7%A9%D7%99%2C%2029%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%9E%D7%A6%22%D7%91%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%D7%9D%20%D7%9C%D7%A9%D7%A0%D7%AA%20%D7%94%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99%D7%9D%20%D7%AA%D7%A9%D7%A4%22%D7%96%20-%20%D7%9C%D7%90%D7%97%D7%A8%20%D7%A9%D7%90%D7%95%D7%A9%D7%A8%20%D7%A2%D7%9C%20%D7%99%D7%93%D7%99%20%D7%94%D7%A0%D7%94%D7%92%D7%AA%20%D7%94%D7%94%D7%95%D7%A8%D7%99%D7%9D%20%D7%95%D7%94%D7%A8%D7%A9%D7%95%D7%AA.%20%D7%99%D7%A9%20%D7%9C%D7%94%D7%A1%D7%93%D7%99%D7%A8%20%D7%90%D7%AA%20%D7%94%D7%AA%D7%A9%D7%9C%D7%95%D7%9D%20%D7%A2%D7%93%20%D7%9C%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2029%2F10.%20%D7%A0%D7%99%D7%AA%D7%9F%20%D7%9C%D7%A2%D7%A9%D7%95%D7%AA%20%D7%96%D7%90%D7%AA%20%D7%93%D7%A8%D7%9A%20%D7%90%D7%AA%D7%A8%20%D7%91%D7%99%D7%AA%20%D7%94%D7%A1%D7%A4%D7%A8%3A%C2%A0%C2%A0%D7%9C%D7%A9%D7%95%D7%A0%D7%99%D7%AA%20%D7%94%D7%95%D7%A8%D7%99%D7%9D-%D7%AA%D7%9C%D7%9E%D7%99%D7%93%D7%99%D7%9D%20%D7%95%D7%90%D7%96%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20https%3A%2F%2Framatavivg.tik-tak.net%2F%C2%A0%20%C2%A0%D7%90%D7%95%20%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA%20%D7%A6'%D7%A7%2F%D7%9E%D7%96%D7%95%D7%9E%D7%9F%20%D7%9C%D7%9E%D7%96%D7%9B%D7%99%D7%A8%D7%95%D7%AA%20%D7%91%D7%99%D7%AA%20%D7%94%D7%A1%D7%A4%D7%A8%E2%80%A6" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">יערן יגאל (מורה) · 19/10/2026<br><strong>חוזר תשלומי הורים - תשפ"ז</strong><br>שלום לכל הורי בית הספר,<br><br>מצ"ב חוזר תשלומים לשנת הלימודים תשפ"ז - לאחר שאושר על ידי הנהגת ההורים והרשות. <br><br>יש להסדיר את התשלום עד לתאריך 29/10. <br><br>ניתן לעשות זאת דרך אתר בית הספר:  לשונית הורים-תלמידים ואז תשלומי הורים<br><br>https://ramatavivg.tik-tak.net/   או באמצעות צ'ק/מזומן למזכירות בית הספר. <br><br>אנא הקפידו לסיים את הסדר התשלום במועד הנקוב. בית הספר מחויב לשלם עבור הפעילויות שכבר ניתנו לתלמידים ואמורים להינתן לכל אורך השנה. <br><br>תודה על שיתוף הפעולה, <br>יגאל</div></details>
+    </div>
+  </div><div class="digest-section school"><h4>📚 <span class="i18n" data-he="בית ספר" data-en="School">בית ספר</span></h4>
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#2f8fd6">📝 <span class="i18n" data-he="שיעורי בית" data-en="Homework">שיעורי בית</span></span>
+        <span class="item-date">יום שני, 19 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">עדכון שיעורי בית</div>
+      <p class="item-detail">איתן, עודכנו עבורך שיעורי-בית "הילדים קיבלו טקסט הבנת הנקרא באנגלית ושאלות למחברת<br>להגשה עד השיעור הבא." בשיעור שפה בתאריך 19/10/2026 בשיעור 4</p>
+      <div class="item-actions">
+        
+        <a class="btn-mini" href="https://wa.me/?text=%D7%90%D7%99%D7%AA%D7%9F%20%E2%80%93%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%20%F0%9F%93%9D%20%D7%99%D7%95%D7%9D%20%D7%A9%D7%A0%D7%99%2C%2019%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%90%D7%99%D7%AA%D7%9F%2C%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95%20%D7%A2%D7%91%D7%95%D7%A8%D7%9A%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99-%D7%91%D7%99%D7%AA%20%22%D7%94%D7%99%D7%9C%D7%93%D7%99%D7%9D%20%D7%A7%D7%99%D7%91%D7%9C%D7%95%20%D7%98%D7%A7%D7%A1%D7%98%20%D7%94%D7%91%D7%A0%D7%AA%20%D7%94%D7%A0%D7%A7%D7%A8%D7%90%20%D7%91%D7%90%D7%A0%D7%92%D7%9C%D7%99%D7%AA%20%D7%95%D7%A9%D7%90%D7%9C%D7%95%D7%AA%20%D7%9C%D7%9E%D7%97%D7%91%D7%A8%D7%AA%0A%D7%9C%D7%94%D7%92%D7%A9%D7%94%20%D7%A2%D7%93%20%D7%94%D7%A9%D7%99%D7%A2%D7%95%D7%A8%20%D7%94%D7%91%D7%90.%22%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%20%D7%A9%D7%A4%D7%94%20%D7%91%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2019%2F10%2F2026%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%204" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">[נושאי שיעור ושיעורי-בית] יום שני, 19/10/2026 (11:47)<br>איתן, עודכנו עבורך שיעורי-בית "הילדים קיבלו טקסט הבנת הנקרא באנגלית ושאלות למחברת<br>להגשה עד השיעור הבא." בשיעור שפה בתאריך 19/10/2026 בשיעור 4</div></details>
+    </div>
+  
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#2f8fd6">📝 <span class="i18n" data-he="שיעורי בית" data-en="Homework">שיעורי בית</span></span>
+        <span class="item-date">יום שני, 19 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">עדכון שיעורי בית</div>
+      <p class="item-detail">איתן, עודכנו עבורך שיעורי-בית "שיעורי בית בצילום המצורף" בשיעור שפה בתאריך 19/10/2026 בשיעור 3</p>
+      <div class="item-actions">
+        
+        <a class="btn-mini" href="https://wa.me/?text=%D7%90%D7%99%D7%AA%D7%9F%20%E2%80%93%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%20%F0%9F%93%9D%20%D7%99%D7%95%D7%9D%20%D7%A9%D7%A0%D7%99%2C%2019%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%90%D7%99%D7%AA%D7%9F%2C%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95%20%D7%A2%D7%91%D7%95%D7%A8%D7%9A%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99-%D7%91%D7%99%D7%AA%20%22%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%20%D7%91%D7%A6%D7%99%D7%9C%D7%95%D7%9D%20%D7%94%D7%9E%D7%A6%D7%95%D7%A8%D7%A3%22%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%20%D7%A9%D7%A4%D7%94%20%D7%91%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2019%2F10%2F2026%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%203" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">[נושאי שיעור ושיעורי-בית] יום שני, 19/10/2026 (10:56)<br>איתן, עודכנו עבורך שיעורי-בית "שיעורי בית בצילום המצורף" בשיעור שפה בתאריך 19/10/2026 בשיעור 3</div></details>
+    </div>
+  
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#2f8fd6">📝 <span class="i18n" data-he="שיעורי בית" data-en="Homework">שיעורי בית</span></span>
+        <span class="item-date">יום שני, 19 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">עדכון שיעורי בית</div>
+      <p class="item-detail">איתן, עודכנו עבורך שיעורי-בית "עמוד 32 השעה. <br>שיעורי בית באנגלית בצילום המצורף." בשיעור אנגלית בתאריך 19/10/2026 בשיעור 2</p>
+      <div class="item-actions">
+        
+        <a class="btn-mini" href="https://wa.me/?text=%D7%90%D7%99%D7%AA%D7%9F%20%E2%80%93%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%20%F0%9F%93%9D%20%D7%99%D7%95%D7%9D%20%D7%A9%D7%A0%D7%99%2C%2019%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%90%D7%99%D7%AA%D7%9F%2C%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95%20%D7%A2%D7%91%D7%95%D7%A8%D7%9A%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99-%D7%91%D7%99%D7%AA%20%22%D7%A2%D7%9E%D7%95%D7%93%2032%20%D7%94%D7%A9%D7%A2%D7%94.%20%0A%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%20%D7%91%D7%90%D7%A0%D7%92%D7%9C%D7%99%D7%AA%20%D7%91%D7%A6%D7%99%D7%9C%D7%95%D7%9D%20%D7%94%D7%9E%D7%A6%D7%95%D7%A8%D7%A3.%22%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%20%D7%90%D7%A0%D7%92%D7%9C%D7%99%D7%AA%20%D7%91%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2019%2F10%2F2026%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%202" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">[נושאי שיעור ושיעורי-בית] יום שני, 19/10/2026 (09:26)<br>איתן, עודכנו עבורך שיעורי-בית "עמוד 32 השעה. <br>שיעורי בית באנגלית בצילום המצורף." בשיעור אנגלית בתאריך 19/10/2026 בשיעור 2</div></details>
+    </div>
+  
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#2f8fd6">📝 <span class="i18n" data-he="שיעורי בית" data-en="Homework">שיעורי בית</span></span>
+        <span class="item-date">יום שני, 19 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">עדכון שיעורי בית</div>
+      <p class="item-detail">איתן, עודכנו עבורך שיעורי-בית "נא לדאוג שלכל צלמיד/ה יהיה ספר קריאה בתיק באופן קבוע.<br>מצגת בנושא ״אבל כולם עושים את זה״ - לחץ חברתי. תכנים של משרד החינוך." בשיעור כישורי חיים בתאריך 19/10/2026 בשיעור 1</p>
+      <div class="item-actions">
+        
+        <a class="btn-mini" href="https://wa.me/?text=%D7%90%D7%99%D7%AA%D7%9F%20%E2%80%93%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%20%F0%9F%93%9D%20%D7%99%D7%95%D7%9D%20%D7%A9%D7%A0%D7%99%2C%2019%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%90%D7%99%D7%AA%D7%9F%2C%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95%20%D7%A2%D7%91%D7%95%D7%A8%D7%9A%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99-%D7%91%D7%99%D7%AA%20%22%D7%A0%D7%90%20%D7%9C%D7%93%D7%90%D7%95%D7%92%20%D7%A9%D7%9C%D7%9B%D7%9C%20%D7%A6%D7%9C%D7%9E%D7%99%D7%93%2F%D7%94%20%D7%99%D7%94%D7%99%D7%94%20%D7%A1%D7%A4%D7%A8%20%D7%A7%D7%A8%D7%99%D7%90%D7%94%20%D7%91%D7%AA%D7%99%D7%A7%20%D7%91%D7%90%D7%95%D7%A4%D7%9F%20%D7%A7%D7%91%D7%95%D7%A2.%0A%D7%9E%D7%A6%D7%92%D7%AA%20%D7%91%D7%A0%D7%95%D7%A9%D7%90%20%D7%B4%D7%90%D7%91%D7%9C%20%D7%9B%D7%95%D7%9C%D7%9D%20%D7%A2%D7%95%D7%A9%D7%99%D7%9D%20%D7%90%D7%AA%20%D7%96%D7%94%D7%B4%20-%20%D7%9C%D7%97%D7%A5%20%D7%97%D7%91%D7%A8%D7%AA%D7%99.%20%D7%AA%D7%9B%D7%A0%D7%99%D7%9D%20%D7%A9%D7%9C%20%D7%9E%D7%A9%D7%A8%D7%93%20%D7%94%D7%97%D7%99%D7%A0%D7%95%D7%9A.%22%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%20%D7%9B%D7%99%D7%A9%D7%95%D7%A8%D7%99%20%D7%97%D7%99%D7%99%D7%9D%20%D7%91%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2019%2F10%2F2026%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%201" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">[נושאי שיעור ושיעורי-בית] יום שני, 19/10/2026 (08:27)<br>איתן, עודכנו עבורך שיעורי-בית "נא לדאוג שלכל צלמיד/ה יהיה ספר קריאה בתיק באופן קבוע.<br>מצגת בנושא ״אבל כולם עושים את זה״ - לחץ חברתי. תכנים של משרד החינוך." בשיעור כישורי חיים בתאריך 19/10/2026 בשיעור 1</div></details>
+    </div>
+  </div><div class="digest-section update"><h4>📢 <span class="i18n" data-he="כדאי לדעת" data-en="Good to know">כדאי לדעת</span></h4>
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#7a7f8a">📢 <span class="i18n" data-he="עדכון" data-en="Update">עדכון</span></span>
+        <span class="item-date">יום שני, 19 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">הפרעה</div>
+      <p class="item-detail">איתן, נרשם לך הפרעה באנגלית בתאריך 19/10/2026 בשיעור 2</p>
+      <div class="item-actions">
+        
+        <a class="btn-mini" href="https://wa.me/?text=%D7%90%D7%99%D7%AA%D7%9F%20%E2%80%93%20%D7%94%D7%A4%D7%A8%D7%A2%D7%94%20%F0%9F%93%A2%20%D7%99%D7%95%D7%9D%20%D7%A9%D7%A0%D7%99%2C%2019%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%90%D7%99%D7%AA%D7%9F%2C%20%D7%A0%D7%A8%D7%A9%D7%9D%20%D7%9C%D7%9A%20%D7%94%D7%A4%D7%A8%D7%A2%D7%94%20%D7%91%D7%90%D7%A0%D7%92%D7%9C%D7%99%D7%AA%20%D7%91%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2019%2F10%2F2026%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%202" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">[אירועי שיעור] יום שני, 19/10/2026 (09:14)<br>איתן, נרשם לך הפרעה באנגלית בתאריך 19/10/2026 בשיעור 2</div></details>
+    </div>
+  </div>
+      </section>
+    
+      <section class="card child-digest" style="--child-c:#8a4fd6">
+        <h3>👧 עלמה</h3>
+        <div class="digest-section need"><h4>🔴 <span class="i18n" data-he="צריך לעשות" data-en="Need to do">צריך לעשות</span></h4>
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#c98a1c">💰 <span class="i18n" data-he="תשלום" data-en="Payment">תשלום</span></span>
+        <span class="item-date">יום חמישי, 29 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">חוזר תשלומי הורים - תשפ"ז</div>
+      <p class="item-detail">מצ"ב חוזר תשלומים לשנת הלימודים תשפ"ז - לאחר שאושר על ידי הנהגת ההורים והרשות. יש להסדיר את התשלום עד לתאריך 29/10. ניתן לעשות זאת דרך אתר בית הספר:  לשונית הורים-תלמידים ואז תשלומי הורים https://ramatavivg.tik-tak.net/   או באמצעות צ'ק/מזומן למזכירות בית הספר…</p>
+      <div class="item-actions">
+        <a class="btn-mini" href="https://www.google.com/calendar/render?action=TEMPLATE&text=%D7%A2%D7%9C%D7%9E%D7%94+%E2%80%93+%D7%97%D7%95%D7%96%D7%A8+%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99+%D7%94%D7%95%D7%A8%D7%99%D7%9D+-+%D7%AA%D7%A9%D7%A4%22%D7%96&dates=20261029%2F20261030&details=%D7%9E%D7%A6%22%D7%91+%D7%97%D7%95%D7%96%D7%A8+%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%D7%9D+%D7%9C%D7%A9%D7%A0%D7%AA+%D7%94%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99%D7%9D+%D7%AA%D7%A9%D7%A4%22%D7%96+-+%D7%9C%D7%90%D7%97%D7%A8+%D7%A9%D7%90%D7%95%D7%A9%D7%A8+%D7%A2%D7%9C+%D7%99%D7%93%D7%99+%D7%94%D7%A0%D7%94%D7%92%D7%AA+%D7%94%D7%94%D7%95%D7%A8%D7%99%D7%9D+%D7%95%D7%94%D7%A8%D7%A9%D7%95%D7%AA.+%D7%99%D7%A9+%D7%9C%D7%94%D7%A1%D7%93%D7%99%D7%A8+%D7%90%D7%AA+%D7%94%D7%AA%D7%A9%D7%9C%D7%95%D7%9D+%D7%A2%D7%93+%D7%9C%D7%AA%D7%90%D7%A8%D7%99%D7%9A+29%2F10.+%D7%A0%D7%99%D7%AA%D7%9F+%D7%9C%D7%A2%D7%A9%D7%95%D7%AA+%D7%96%D7%90%D7%AA+%D7%93%D7%A8%D7%9A+%D7%90%D7%AA%D7%A8+%D7%91%D7%99%D7%AA+%D7%94%D7%A1%D7%A4%D7%A8%3A%C2%A0%C2%A0%D7%9C%D7%A9%D7%95%D7%A0%D7%99%D7%AA+%D7%94%D7%95%D7%A8%D7%99%D7%9D-%D7%AA%D7%9C%D7%9E%D7%99%D7%93%D7%99%D7%9D+%D7%95%D7%90%D7%96+%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99+%D7%94%D7%95%D7%A8%D7%99%D7%9D+https%3A%2F%2Framatavivg.tik-tak.net%2F%C2%A0+%C2%A0%D7%90%D7%95+%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA+%D7%A6%27%D7%A7%2F%D7%9E%D7%96%D7%95%D7%9E%D7%9F+%D7%9C%D7%9E%D7%96%D7%9B%D7%99%D7%A8%D7%95%D7%AA+%D7%91%D7%99%D7%AA+%D7%94%D7%A1%D7%A4%D7%A8%E2%80%A6" target="_blank" rel="noopener">📅 <span class="i18n" data-he="הוסף ליומן" data-en="Add to Calendar">הוסף ליומן</span></a>
+        <a class="btn-mini" href="https://wa.me/?text=%D7%A2%D7%9C%D7%9E%D7%94%20%E2%80%93%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20-%20%D7%AA%D7%A9%D7%A4%22%D7%96%20%F0%9F%92%B0%20%D7%99%D7%95%D7%9D%20%D7%97%D7%9E%D7%99%D7%A9%D7%99%2C%2029%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%9E%D7%A6%22%D7%91%20%D7%97%D7%95%D7%96%D7%A8%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%D7%9D%20%D7%9C%D7%A9%D7%A0%D7%AA%20%D7%94%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99%D7%9D%20%D7%AA%D7%A9%D7%A4%22%D7%96%20-%20%D7%9C%D7%90%D7%97%D7%A8%20%D7%A9%D7%90%D7%95%D7%A9%D7%A8%20%D7%A2%D7%9C%20%D7%99%D7%93%D7%99%20%D7%94%D7%A0%D7%94%D7%92%D7%AA%20%D7%94%D7%94%D7%95%D7%A8%D7%99%D7%9D%20%D7%95%D7%94%D7%A8%D7%A9%D7%95%D7%AA.%20%D7%99%D7%A9%20%D7%9C%D7%94%D7%A1%D7%93%D7%99%D7%A8%20%D7%90%D7%AA%20%D7%94%D7%AA%D7%A9%D7%9C%D7%95%D7%9D%20%D7%A2%D7%93%20%D7%9C%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2029%2F10.%20%D7%A0%D7%99%D7%AA%D7%9F%20%D7%9C%D7%A2%D7%A9%D7%95%D7%AA%20%D7%96%D7%90%D7%AA%20%D7%93%D7%A8%D7%9A%20%D7%90%D7%AA%D7%A8%20%D7%91%D7%99%D7%AA%20%D7%94%D7%A1%D7%A4%D7%A8%3A%C2%A0%C2%A0%D7%9C%D7%A9%D7%95%D7%A0%D7%99%D7%AA%20%D7%94%D7%95%D7%A8%D7%99%D7%9D-%D7%AA%D7%9C%D7%9E%D7%99%D7%93%D7%99%D7%9D%20%D7%95%D7%90%D7%96%20%D7%AA%D7%A9%D7%9C%D7%95%D7%9E%D7%99%20%D7%94%D7%95%D7%A8%D7%99%D7%9D%20https%3A%2F%2Framatavivg.tik-tak.net%2F%C2%A0%20%C2%A0%D7%90%D7%95%20%D7%91%D7%90%D7%9E%D7%A6%D7%A2%D7%95%D7%AA%20%D7%A6'%D7%A7%2F%D7%9E%D7%96%D7%95%D7%9E%D7%9F%20%D7%9C%D7%9E%D7%96%D7%9B%D7%99%D7%A8%D7%95%D7%AA%20%D7%91%D7%99%D7%AA%20%D7%94%D7%A1%D7%A4%D7%A8%E2%80%A6" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">יערן יגאל (מורה) · 19/10/2026<br><strong>חוזר תשלומי הורים - תשפ"ז</strong><br>שלום לכל הורי בית הספר,<br><br>מצ"ב חוזר תשלומים לשנת הלימודים תשפ"ז - לאחר שאושר על ידי הנהגת ההורים והרשות. <br><br>יש להסדיר את התשלום עד לתאריך 29/10. <br><br>ניתן לעשות זאת דרך אתר בית הספר:  לשונית הורים-תלמידים ואז תשלומי הורים<br><br>https://ramatavivg.tik-tak.net/   או באמצעות צ'ק/מזומן למזכירות בית הספר. <br><br>אנא הקפידו לסיים את הסדר התשלום במועד הנקוב. בית הספר מחויב לשלם עבור הפעילויות שכבר ניתנו לתלמידים ואמורים להינתן לכל אורך השנה. <br><br>תודה על שיתוף הפעולה, <br>יגאל</div></details>
+    </div>
+  </div><div class="digest-section school"><h4>📚 <span class="i18n" data-he="בית ספר" data-en="School">בית ספר</span></h4>
+    <div class="item-card">
+      <div class="item-head">
+        <span class="chip" style="--c:#2f8fd6">📝 <span class="i18n" data-he="שיעורי בית" data-en="Homework">שיעורי בית</span></span>
+        <span class="item-date">יום שני, 19 באוקטובר</span>
+        
+      </div>
+      <div class="item-title">עדכון שיעורי בית</div>
+      <p class="item-detail">עלמה, עודכנו עבורך שיעורי-בית "אין" בשיעור אנגלית בתאריך 19/10/2026 בשיעור 4</p>
+      <div class="item-actions">
+        
+        <a class="btn-mini" href="https://wa.me/?text=%D7%A2%D7%9C%D7%9E%D7%94%20%E2%80%93%20%D7%A2%D7%93%D7%9B%D7%95%D7%9F%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99%20%D7%91%D7%99%D7%AA%20%F0%9F%93%9D%20%D7%99%D7%95%D7%9D%20%D7%A9%D7%A0%D7%99%2C%2019%20%D7%91%D7%90%D7%95%D7%A7%D7%98%D7%95%D7%91%D7%A8%0A%D7%A2%D7%9C%D7%9E%D7%94%2C%20%D7%A2%D7%95%D7%93%D7%9B%D7%A0%D7%95%20%D7%A2%D7%91%D7%95%D7%A8%D7%9A%20%D7%A9%D7%99%D7%A2%D7%95%D7%A8%D7%99-%D7%91%D7%99%D7%AA%20%22%D7%90%D7%99%D7%9F%22%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%20%D7%90%D7%A0%D7%92%D7%9C%D7%99%D7%AA%20%D7%91%D7%AA%D7%90%D7%A8%D7%99%D7%9A%2019%2F10%2F2026%20%D7%91%D7%A9%D7%99%D7%A2%D7%95%D7%A8%204" target="_blank" rel="noopener">💬 <span class="i18n" data-he="וואטסאפ" data-en="WhatsApp">וואטסאפ</span></a>
+      </div>
+      <details class="original-toggle"><summary><span class="i18n" data-he="הצג מקור" data-en="View original">הצג מקור</span></summary><div class="digest-original">[נושאי שיעור ושיעורי-בית] יום שני, 19/10/2026 (10:31)<br>עלמה, עודכנו עבורך שיעורי-בית "אין" בשיעור אנגלית בתאריך 19/10/2026 בשיעור 4</div></details>
+    </div>
+  </div>
+      </section>
+    
+  
+  </div>
+  <script>
+    var currentLang = 'he';
+    function applyLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.i18n, .i18n-el').forEach(function (el) {
+        var text = lang === 'en' ? el.dataset.en : el.dataset.he;
+        if (text != null) {
+          if (el.tagName === 'TITLE') { document.title = text; }
+          else { el.textContent = text; }
+        }
+      });
+      document.documentElement.dir = 'rtl';
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.textContent = lang === 'en' ? 'עברית' : 'EN';
+      try { localStorage.setItem('webtop-lang', lang); } catch (e) {}
+    }
+    (function () {
+      var saved = 'he';
+      try { saved = localStorage.getItem('webtop-lang') || 'he'; } catch (e) {}
+      applyLang(saved);
+      var btn = document.getElementById('lang-toggle');
+      if (btn) btn.addEventListener('click', function () { applyLang(currentLang === 'en' ? 'he' : 'en'); });
+    })();
+
+    document.querySelectorAll('table').forEach(function (table) {
+      var headRow = table.tHead ? table.tHead.rows[0] : table.rows[0];
+      if (!headRow) return;
+      Array.from(headRow.cells).forEach(function (th, colIndex) {
+        th.classList.add('sortable');
+        th.addEventListener('click', function () {
+          var tbody = table.tBodies[0];
+          if (!tbody) return;
+          var rows = Array.from(tbody.rows);
+          var newDir = th.classList.contains('sort-asc') ? 'desc' : 'asc';
+          Array.from(headRow.cells).forEach(function (c) { c.classList.remove('sort-asc', 'sort-desc'); });
+          th.classList.add(newDir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+          function getValue(row) {
+            var cell = row.cells[colIndex];
+            if (!cell) return '';
+            if (cell.dataset.sort !== undefined) return cell.dataset.sort;
+            return cell.textContent.trim();
+          }
+
+          rows.sort(function (a, b) {
+            var va = getValue(a), vb = getValue(b);
+            var na = Number(va), nb = Number(vb);
+            var cmp;
+            if (va !== '' && vb !== '' && !isNaN(na) && !isNaN(nb)) {
+              cmp = na - nb;
+            } else {
+              cmp = va.localeCompare(vb, 'he');
+            }
+            return newDir === 'asc' ? cmp : -cmp;
+          });
+
+          rows.forEach(function (row) { tbody.appendChild(row); });
+        });
+      });
+    });
+
+    (function () {
+      var childSel = document.getElementById('filter-child');
+      var catSel = document.getElementById('filter-category');
+      var subcatSel = document.getElementById('filter-subcategory');
+      if (!childSel && !catSel && !subcatSel) return;
+
+      function applyFilters() {
+        var childVal = childSel ? childSel.value : '';
+        var catVal = catSel ? catSel.value : '';
+        var subcatVal = subcatSel ? subcatSel.value : '';
+        document.querySelectorAll('tbody tr[data-child]').forEach(function (row) {
+          var show = (!childVal || row.dataset.child === childVal) &&
+                     (!catVal || row.dataset.category === catVal) &&
+                     (!subcatVal || row.dataset.subcategory === subcatVal);
+          row.style.display = show ? '' : 'none';
+        });
+      }
+
+      [childSel, catSel, subcatSel].forEach(function (sel) {
+        if (sel) sel.addEventListener('change', applyFilters);
+      });
+    })();
+
+    (function () {
+      var btn = document.getElementById('gen-digest-btn');
+      if (!btn) return;
+      var GENERATING = { he: 'מייצר סיכום… (עד דקה)', en: 'Generating… (up to a minute)' };
+      var LOCAL_ONLY = { he: 'זמין רק כשמריצים node server.js מקומית', en: 'Only available when running node server.js locally' };
+      btn.addEventListener('click', function () {
+        btn.disabled = true;
+        var originalHe = btn.dataset.he, originalEn = btn.dataset.en;
+        btn.textContent = GENERATING[currentLang];
+        fetch('/api/generate-digest', { method: 'POST' })
+          .then(function (res) { if (!res.ok) throw new Error('failed'); return res.json(); })
+          .then(function () { window.location.href = 'digest.html'; })
+          .catch(function () {
+            btn.textContent = LOCAL_ONLY[currentLang];
+            setTimeout(function () {
+              btn.textContent = currentLang === 'en' ? originalEn : originalHe;
+              btn.disabled = false;
+            }, 3000);
+          });
+      });
+    })();
+  </script>
+</body>
+</html>
