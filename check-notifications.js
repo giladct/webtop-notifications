@@ -1614,6 +1614,15 @@ async function main() {
   const context = await browser.newContext({ storageState: SESSION_PATH });
   const page = await context.newPage();
 
+  // Expired sessions redirect to the login page a few seconds AFTER the dashboard
+  // loads, so probe once up front and wait for that redirect before trusting it.
+  await page.goto('https://webtop.smartschool.co.il/dashboard', { waitUntil: 'networkidle', timeout: 30000 });
+  await page.waitForTimeout(4000);
+  if (new URL(page.url()).pathname.startsWith('/account/login')) {
+    await browser.close();
+    throw new SessionExpiredError('Webtop session expired — run: node login-setup.js');
+  }
+
   const summaryLines = [];
   const htmlChildren = [];
   let anySessionExpired = false;
