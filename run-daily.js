@@ -22,7 +22,18 @@ function publish() {
   git('push');
 }
 
-const scrape = run('check-notifications.js');
+let scrape = run('check-notifications.js');
+
+// Exit 2 = the Webtop session expired (its token only lasts ~9 hours and login needs a
+// CAPTCHA). Open the login window so whoever is at the PC can solve it (login-setup.js
+// waits up to 8 minutes), then retry the scrape once. If nobody logs in, fall through
+// to the skip branch below and the live site stays as it was.
+if (scrape.status === 2) {
+  console.error('Session expired — opening the login window.');
+  const login = run('login-setup.js');
+  if (login.status === 0) scrape = run('check-notifications.js');
+}
+
 if (scrape.status === 0) {
   run('send-email.js');
   publish();
